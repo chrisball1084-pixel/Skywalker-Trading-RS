@@ -44,6 +44,20 @@
   button.tb.primary{background:var(--up-soft);border-color:#254d38;color:var(--up)}
   button.tb svg{width:14px;height:14px}
 
+  .sortbar{display:flex;align-items:center;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .sortbar::-webkit-scrollbar{display:none}
+  .sortlbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);flex:none;font-weight:600}
+  .chip{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+    font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:14px;cursor:pointer;transition:.12s;font-family:var(--sans)}
+  .chip:active{transform:scale(.96)}
+  .chip.active{background:var(--up-soft);border-color:#2b5540;color:var(--up)}
+
+  .tk .meta{display:flex;gap:8px;margin-top:2px}
+  .tk .meta span{font-family:var(--mono);font-size:9px;letter-spacing:.02em;font-weight:600}
+  .tk .meta .lab{color:var(--faint);font-weight:500}
+  .tk .meta .thr{color:var(--dim)}
+  .tk .meta .m1{color:var(--dim)}
+
   .status{font-family:var(--mono);font-size:10.5px;color:var(--dim);padding:6px 12px;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:center;gap:8px}
   .status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
@@ -64,7 +78,7 @@
   .row.bench-row{background:var(--panel2)}
   .tk{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.01em}
   .tk .nm{display:block;font-family:var(--sans);font-weight:400;font-size:9.5px;color:var(--faint);letter-spacing:0;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px}
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
   .spark{height:34px;width:100%;display:block}
   .spark.empty{opacity:.25}
   .sts{font-family:var(--mono);font-size:12px;font-weight:700;text-align:right;padding:2px 6px;border-radius:5px}
@@ -148,6 +162,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Setup
     </button>
+  </div>
+  <div class="sortbar">
+    <span class="sortlbl">Sortieren</span>
+    <button class="chip active" data-sort="orig">Original</button>
+    <button class="chip" data-sort="pct">RS %</button>
+    <button class="chip" data-sort="thrust">Thrust</button>
+    <button class="chip" data-sort="chg">Tag %</button>
   </div>
 </header>
 
@@ -260,26 +281,53 @@ XLRE, Real Estate
 XLP, Consumer Staples
 XLU, Utilities
 #Industry Groups
-GDX, Gold Miners
 GDXJ, Junior Gold Miners
-SIL, Silver Miners
+GDX, Gold Miners
 SILJ, Junior Silver Miners
+SIL, Silver Miners
+SLV, Silver
+GLD, Gold
+PALL, Palladium
+PPLT, Platinum
 COPX, Copper Miners
 XME, Metals & Mining
 SLX, Steel
+GNR, Natural Resources
+PHO, Water Purification & Infrastructure
 URA, Uranium
+URNM, Uranium Miners
+NLR, Nuclear Power
 ITA, Aerospace & Defense
+XAR, Aerospace & Defense EW
+SHLD, Global Defense Tech
 JETS, Airlines
-XSD, Semiconductors
-XSW, Software
+XSW, Software EW
 IGV, Tech-Software
-WCLD, Cloud Tech
+BUG, Pure Cybersecurity
 CIBR, Cybersecurity
+WCLD, Cloud Tech
+CLOU, Cloud Infra & SaaS
+FDN, US Internet Giants
+XSD, Semiconductors
+ROBO, Robotics & Automation
 BOTZ, AI & Robotics
-IPAY, Fintech
-ITB, Homebuilders
+KCE, Capital Markets & Financials
+IPAY, Digital Payments & Fintech
+ARKF, ARK Fintech
+XHE, Health Devices
+IHI, Med-Tech & Surgical
 PAVE, US Infrastructure
+GRID, Infrastructure & Electrical
+ITB, Homebuilders
+IYZ, Telecommunications
 LIT, Lithium & Battery
+WOOD, Timber & Lumber
+KWEB, Chinese Tech & E-Commerce
+CHIQ, China Consumer
+IBUY, Global E-Commerce
+ARKX, ARK Space Exploration
+ARKG, ARK Genomics
+SVIX, Short VIX Futures
 #Stocks
 NVDA, NVIDIA
 AAPL, Apple
@@ -296,6 +344,7 @@ let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, 
 let benchmark = localStorage.getItem(LS.bench) || 'SPY';
 if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); } // migrate broken symbol
 let windowN = +(localStorage.getItem(LS.win) || 25);
+let sortMode = localStorage.getItem('rs.sort') || 'orig';
 
 /* ---------- Parsing ---------- */
 function parseTickers(text){
@@ -352,6 +401,24 @@ function percentRank(arr, x){
   const lo=a[i], hi=a[i+1];
   return (i + (x-lo)/(hi-lo))/(N-1);
 }
+function weightedThrust(rs){
+  // 1-week weighted RS: gewichtete Summe der täglichen RS-Wachstumsraten über die letzten 5 Tage.
+  // Gewichte 5,4,3,2,1 (jüngster Tag am stärksten). Ergebnis als % um 100 herum.
+  const n = rs.length;
+  if(n < 2) return null;
+  const days = Math.min(5, n-1);
+  const weights = [];
+  for(let k=days;k>=1;k--) weights.push(k);       // z.B. [5,4,3,2,1]
+  const wsum = weights.reduce((a,b)=>a+b,0);
+  let acc = 0;
+  for(let j=0;j<days;j++){
+    const idx = n-1-j;                              // jüngster zuerst
+    const chg = rs[idx]/rs[idx-1] - 1;
+    acc += chg * weights[j];
+  }
+  const wAvg = acc / wsum;                          // gewichtete mittlere Tagesänderung
+  return 1 + wAvg * 5;                              // auf Woche hochrechnen, um 100% zentriert
+}
 function stsColor(p){
   if(p==null) return {bg:'transparent',fg:'var(--faint)'};
   // green ramp like the sheet's conditional formatting
@@ -376,10 +443,31 @@ function render(dataMap){
   html += `<div class="group-head">Benchmark</div>`;
   html += rowHTML({type:'tk', ticker:benchmark, name:'Referenz'}, null, true, b);
 
+  // split ROWS into group blocks, sort within each block
+  const blocks = [];
+  let cur = {label:null, items:[]};
   ROWS.forEach(r=>{
-    if(r.type==='group'){ html += `<div class="group-head">${esc(r.label)}</div>`; return; }
+    if(r.type==='group'){ if(cur.items.length||cur.label!==null) blocks.push(cur); cur={label:r.label, items:[]}; }
+    else cur.items.push(r);
+  });
+  if(cur.items.length||cur.label!==null) blocks.push(cur);
+
+  const val = (r)=>{
     const d = dataMap && dataMap[r.ticker];
-    html += rowHTML(r, d, false, null);
+    if(!d) return -Infinity;
+    if(sortMode==='pct') return d.pct==null?-Infinity:d.pct;
+    if(sortMode==='thrust') return d.thrust==null?-Infinity:d.thrust;
+    if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
+    return 0;
+  };
+  blocks.forEach(bl=>{
+    if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>`;
+    let items = bl.items;
+    if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
+    items.forEach(r=>{
+      const d = dataMap && dataMap[r.ticker];
+      html += rowHTML(r, d, false, null);
+    });
   });
   main.innerHTML = html;
 }
@@ -403,9 +491,16 @@ function rowHTML(r, d, isBench, benchData){
     sts = `<span class="sts" style="color:var(--faint)">·</span>`;
   }
   const nm = r.name && r.name!==r.ticker ? `<span class="nm">${esc(r.name)}</span>` : '';
+  let meta='';
+  if(!isBench && d && d.rs && d.rs.length){
+    const thr = d.thrust!=null ? Math.round(d.thrust*100)+'%' : '–';
+    const thrCol = d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)');
+    const m1  = d.pct!=null ? Math.round(d.pct*100/5)*5+'%' : '–';
+    meta = `<span class="meta"><span class="lab">THR</span><span class="thr" style="color:${thrCol}">${thr}</span><span class="lab">1M</span><span class="m1">${m1}</span></span>`;
+  }
   return `<div class="row${isBench?' bench-row':''}">
     <span class="rank-badge" style="background:${barCol}"></span>
-    <span class="tk">${esc(r.ticker)}${nm}</span>
+    <span class="tk">${esc(r.ticker)}${nm}${meta}</span>
     ${spark}
     ${sts}
     <span class="chg ${chgCls}">${chg}</span>
@@ -481,8 +576,12 @@ async function refresh(){
           const base = rsRaw[0];
           const rs = rsRaw.map(x=> x/base);
           const pct = percentRank(rs, rs.at(-1));
+          // Thrust = 1-Wochen gewichtete RS (Jeffs "RS Thrust Rate %").
+          // Gewichtete mittlere Tagesänderung der RS über die letzten 5 Tage (heute am stärksten),
+          // skaliert auf 100% = neutral. >100% zieht an, <100% fällt zurück.
+          const thrust = weightedThrust(rs);
           const last=s.at(-1).c, prev=s.at(-2)?.c;
-          dataMap[sym] = {rs, pct, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+          dataMap[sym] = {rs, pct, thrust, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
         }
       }
     }catch(e){ failed.push(sym); }
@@ -535,6 +634,16 @@ $('#btnSettings').onclick = ()=>openSheet('set');
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
 $('#tickerBg').onclick=closeSheets; $('#setBg').onclick=closeSheets;
 
+// Sortier-Chips
+document.querySelectorAll('.chip[data-sort]').forEach(c=>{
+  c.onclick = ()=>{
+    sortMode = c.dataset.sort;
+    localStorage.setItem('rs.sort', sortMode);
+    document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x===c));
+    render(loadCache());
+  };
+});
+
 $('#saveTickers').onclick = ()=>{
   const txt = $('#tickerText').value;
   localStorage.setItem(LS.tickers, txt);
@@ -585,6 +694,7 @@ $('#testConn').onclick = async ()=>{
 /* ---------- Init ---------- */
 loadTickers();
 $('#benchLabel').textContent = benchmark;
+document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x.dataset.sort===sortMode));
 render(loadCache());
 if('serviceWorker' in navigator){/* offline shell optional */}
 </script>
