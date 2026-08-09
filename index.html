@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RS Scope">
+<title>RS Scope</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230a0e14'/%3E%3Cg fill='%234ade80'%3E%3Crect x='30' y='110' width='12' height='40'/%3E%3Crect x='48' y='90' width='12' height='60'/%3E%3Crect x='66' y='70' width='12' height='80'/%3E%3Crect x='84' y='50' width='12' height='100'/%3E%3Crect x='102' y='64' width='12' height='86'/%3E%3Crect x='120' y='40' width='12' height='110'/%3E%3Crect x='138' y='58' width='12' height='92'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22RS%20Scope%22%2C%22short_name%22%3A%22RS%20Scope%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0e14%22%2C%22theme_color%22%3A%22%230a0e14%22%2C%22start_url%22%3A%22.%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2527http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2527%2520viewBox%253D%25270%25200%2520180%2520180%2527%253E%253Crect%2520width%253D%2527180%2527%2520height%253D%2527180%2527%2520fill%253D%2527%25230a0e14%2527%252F%253E%253Cg%2520fill%253D%2527%25234ade80%2527%253E%253Crect%2520x%253D%252784%2527%2520y%253D%252750%2527%2520width%253D%252712%2527%2520height%253D%2527100%2527%252F%253E%253C%252Fg%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#111722; --panel2:#0d1420; --line:#1c2534;
+    --ink:#e6edf3; --dim:#7d8aa0; --faint:#4a5568;
+    --up:#4ade80; --up-soft:#1a3325; --down:#f87171; --down-soft:#3a1f22;
+    --accent:#38bdf8; --gold:#fbbf24;
+    --mono:'SF Mono',ui-monospace,'JetBrains Mono','Menlo',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+  body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-text-size-adjust:100%}
+
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(10,14,20,.92);
+    backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+    padding:10px 12px calc(10px + env(safe-area-inset-top)) 12px;padding-top:calc(10px + env(safe-area-inset-top));
+  }
+  .brand{display:flex;align-items:center;gap:9px}
+  .logo{width:22px;height:22px;flex:none}
+  .title{font-weight:700;font-size:16px;letter-spacing:.02em}
+  .title small{font-weight:500;color:var(--dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-left:6px}
+  .bench{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .bench b{color:var(--accent)}
+  .toolbar{display:flex;gap:6px;margin-top:9px}
+  button.tb{
+    flex:1;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 4px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:.12s;
+  }
+  button.tb:active{transform:scale(.97);background:var(--line)}
+  button.tb.primary{background:var(--up-soft);border-color:#254d38;color:var(--up)}
+  button.tb svg{width:14px;height:14px}
+
+  .sortbar{display:flex;align-items:center;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .sortbar::-webkit-scrollbar{display:none}
+  .sortlbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);flex:none;font-weight:600}
+  .chip{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+    font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:14px;cursor:pointer;transition:.12s;font-family:var(--sans)}
+  .chip:active{transform:scale(.96)}
+  .chip.active{background:var(--up-soft);border-color:#2b5540;color:var(--up)}
+
+  .tk .meta{display:flex;gap:8px;margin-top:2px}
+  .tk .meta span{font-family:var(--mono);font-size:9px;letter-spacing:.02em;font-weight:600}
+  .tk .meta .lab{color:var(--faint);font-weight:500}
+  .tk .meta .thr{color:var(--dim)}
+  .tk .meta .m1{color:var(--dim)}
+
+  .status{font-family:var(--mono);font-size:10.5px;color:var(--dim);padding:6px 12px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+  .status .dot.live{background:var(--up);box-shadow:0 0 8px var(--up)}
+  .status .dot.err{background:var(--down)}
+  .status.hidden{display:none}
+
+  main{padding:0 0 40px}
+  .group-head{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--dim);padding:14px 12px 5px;position:sticky;top:0;
+    background:linear-gradient(180deg,var(--bg),rgba(10,14,20,.6));z-index:5;
+  }
+  .row{
+    display:grid;grid-template-columns:52px 1fr 62px 40px;align-items:center;gap:8px;
+    padding:7px 12px;border-bottom:1px solid var(--line);position:relative;
+  }
+  .row.bench-row{background:var(--panel2)}
+  .tk{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.01em}
+  .tk .nm{display:block;font-family:var(--sans);font-weight:400;font-size:9.5px;color:var(--faint);letter-spacing:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .spark{height:34px;width:100%;display:block}
+  .spark.empty{opacity:.25}
+  .sts{font-family:var(--mono);font-size:12px;font-weight:700;text-align:right;padding:2px 6px;border-radius:5px}
+  .chg{font-family:var(--mono);font-size:10.5px;text-align:right;color:var(--dim)}
+  .chg.pos{color:var(--up)} .chg.neg{color:var(--down)}
+  .rank-badge{position:absolute;left:0;top:0;bottom:0;width:2px}
+
+  .empty-state{text-align:center;padding:60px 30px;color:var(--dim)}
+  .empty-state h2{color:var(--ink);font-size:17px;margin:0 0 8px}
+  .empty-state p{font-size:13px;line-height:1.6;margin:0 0 20px}
+  .empty-state .k{font-family:var(--mono);color:var(--accent)}
+
+  /* Sheet / modal */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;opacity:0;pointer-events:none;transition:.2s}
+  .sheet-bg.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--panel);
+    border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+    transform:translateY(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);
+    max-height:88vh;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .sheet.open{transform:translateY(0)}
+  .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--faint);margin:9px auto 4px}
+  .sheet-head{display:flex;align-items:center;padding:6px 16px 12px;border-bottom:1px solid var(--line)}
+  .sheet-head h3{margin:0;font-size:15px;font-weight:700}
+  .sheet-head .x{margin-left:auto;background:none;border:none;color:var(--dim);font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
+  .sheet-body{overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+
+  label.field{display:block;margin-bottom:16px}
+  label.field .lab{font-size:12px;font-weight:600;color:var(--dim);margin-bottom:6px;display:block}
+  label.field .hint{font-size:11px;color:var(--faint);font-weight:400;margin-top:5px;line-height:1.5}
+  input.inp,textarea.inp,select.inp{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    font-family:var(--mono);font-size:13px;padding:11px 12px;border-radius:9px;
+  }
+  input.inp:focus,textarea.inp:focus{outline:none;border-color:var(--accent)}
+  textarea.inp{min-height:220px;resize:vertical;line-height:1.7;white-space:pre;overflow-x:auto}
+  .btn-primary{
+    width:100%;background:var(--up);border:none;color:#062012;font-weight:700;font-size:14px;
+    padding:13px;border-radius:10px;cursor:pointer;margin-top:4px;
+  }
+  .btn-primary:active{opacity:.85}
+  .btn-ghost{
+    width:100%;background:transparent;border:1px solid var(--line);color:var(--dim);font-weight:600;font-size:13px;
+    padding:11px;border-radius:10px;cursor:pointer;margin-top:9px;
+  }
+  .keylink{color:var(--accent);text-decoration:none}
+  .seg-legend{font-size:11px;color:var(--faint);line-height:1.7;font-family:var(--mono)}
+  .seg-legend b{color:var(--dim)}
+  .toast{
+    position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+    background:var(--line);color:var(--ink);font-size:12.5px;padding:10px 16px;border-radius:20px;z-index:60;
+    opacity:0;transition:.25s;pointer-events:none;max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.err{background:var(--down-soft);color:#fca5a5;border:1px solid #5b2a2e}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 180 180"><g fill="var(--up)">
+      <rect x="30" y="110" width="12" height="40"/><rect x="48" y="90" width="12" height="60"/>
+      <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
+      <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
+      <rect x="138" y="58" width="12" height="92"/></g></svg>
+    <span class="title">RS Scope<small>relative strength</small></span>
+    <span class="bench">vs <b id="benchLabel">SPX</b></span>
+  </div>
+  <div class="toolbar">
+    <button class="tb primary" id="btnRefresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      Aktualisieren
+    </button>
+    <button class="tb" id="btnTickers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+      Ticker
+    </button>
+    <button class="tb" id="btnSettings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Setup
+    </button>
+  </div>
+  <div class="sortbar">
+    <span class="sortlbl">Sortieren</span>
+    <button class="chip active" data-sort="orig">Original</button>
+    <button class="chip" data-sort="pct">RS %</button>
+    <button class="chip" data-sort="thrust">Thrust</button>
+    <button class="chip" data-sort="chg">Tag %</button>
+  </div>
+</header>
+
+<div class="status hidden" id="status">
+  <span style="display:flex;align-items:center;gap:7px"><span class="dot" id="statusDot"></span><span id="statusText">Bereit</span></span>
+  <span id="statusMeta"></span>
+</div>
+
+<main id="main"></main>
+
+<!-- Ticker sheet -->
+<div class="sheet-bg" id="tickerBg"></div>
+<div class="sheet" id="tickerSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><h3>Ticker-Liste</h3><button class="x" data-close>&times;</button></div>
+  <div class="sheet-body">
+    <label class="field">
+      <span class="lab">Symbole & Gruppen</span>
+      <textarea class="inp" id="tickerText" spellcheck="false" autocapitalize="off"></textarea>
+      <span class="hint">
+        Ein Ticker pro Zeile. Optionales Format: <span style="color:var(--accent)">TICKER, Anzeigename</span>.<br>
+        Gruppen-Überschrift mit vorangestelltem <span style="color:var(--gold)">#</span>, z.&nbsp;B. <span style="color:var(--gold)">#SPDR Sektoren</span>.<br>
+        Der Benchmark wird separat im Setup gesetzt und muss hier nicht stehen.
+      </span>
+    </label>
+    <button class="btn-primary" id="saveTickers">Speichern & Laden</button>
+    <button class="btn-ghost" id="resetTickers">Auf Jeffs Standardliste zurücksetzen</button>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet-bg" id="setBg"></div>
+<div class="sheet" id="setSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><h3>Setup</h3><button class="x" data-close>&times;</button></div>
+  <div class="sheet-body">
+    <label class="field">
+      <span class="lab">Twelve Data API-Key</span>
+      <input class="inp" id="apiKey" placeholder="dein API-Key" autocapitalize="off" spellcheck="false">
+      <span class="hint">Kostenlos unter <a class="keylink" href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a> (Free: 800 Abrufe/Tag, 8/Min). Wird nur lokal auf diesem Gerät gespeichert.</span>
+    </label>
+    <label class="field">
+      <span class="lab">Benchmark (Referenz für RS)</span>
+      <select class="inp" id="benchSel">
+        <option value="SPY">SPY — SPDR S&P 500 ETF (sicher, immer verfügbar)</option>
+        <option value="SPX">SPX — S&P 500 Index (nur mit Index-Zugang)</option>
+      </select>
+      <span class="hint">Free-Tier deckt <b>SPY</b> zuverlässig ab. Index-Daten (SPX) sind oft kostenpflichtig – falls SPX keine Daten liefert, schaltet die App automatisch auf SPY um. Nutz „Verbindung testen", um sicherzugehen.</span>
+    </label>
+    <label class="field">
+      <span class="lab">Zeitfenster (Handelstage)</span>
+      <input class="inp" id="windowN" type="number" min="10" max="60" value="25">
+      <span class="hint">Jeff nutzt 25. Das ist die Anzahl Tage im Histogramm und die Basis für RS_STS %.</span>
+    </label>
+    <button class="btn-primary" id="saveSettings">Speichern</button>
+    <button class="btn-ghost" id="testConn">Verbindung testen</button>
+    <div id="testResult" style="margin-top:12px;font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--dim)"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const LS = {
+  key:'rs.apikey', tickers:'rs.tickers', bench:'rs.bench', win:'rs.window', cache:'rs.cache'
+};
+const $ = s => document.querySelector(s);
+
+/* ---------- Default ticker list (from Jeff Sun's screenshots) ---------- */
+const DEFAULT_TICKERS = `#Index
+QQQ, Nasdaq-100
+QQQE, Nasdaq-100 EW
+IWM, Russell 2000
+DIA, Dow 30
+SPMO, S&P 500 Momentum
+TLT, 20Y+ Treasuries
+#Segment
+IJS, SmallCap 600 Value
+IJR, SmallCap 600
+IJT, SmallCap 600 Growth
+IJJ, MidCap 400 Value
+IJH, MidCap 400
+IJK, MidCap 400 Growth
+IVE, LargeCap 500 Value
+IVV, S&P 500
+IVW, LargeCap 500 Growth
+#Equal-Weight Sektoren
+RSPM, EW Materials
+RSPD, EW Discretionary
+RSPN, EW Industrial
+RSPT, EW Technology
+RSPH, EW Health Care
+RSPF, EW Financials
+RSPS, EW Staples
+RSPC, EW Communication
+RSPR, EW Real Estate
+RSPU, EW Utilities
+RSPG, EW Energy
+#SPDR Sektoren
+XLB, Materials
+XLI, Industrials
+XLF, Financials
+XLK, Technology
+XLY, Consumer Discretionary
+XLC, Communication Services
+XLV, Health Care
+XLE, Energy
+XLRE, Real Estate
+XLP, Consumer Staples
+XLU, Utilities
+#Industry Groups
+GDXJ, Junior Gold Miners
+GDX, Gold Miners
+SILJ, Junior Silver Miners
+SIL, Silver Miners
+SLV, Silver
+GLD, Gold
+PALL, Palladium
+PPLT, Platinum
+COPX, Copper Miners
+XME, Metals & Mining
+SLX, Steel
+GNR, Natural Resources
+PHO, Water Purification & Infrastructure
+URA, Uranium
+URNM, Uranium Miners
+NLR, Nuclear Power
+ITA, Aerospace & Defense
+XAR, Aerospace & Defense EW
+SHLD, Global Defense Tech
+JETS, Airlines
+XSW, Software EW
+IGV, Tech-Software
+BUG, Pure Cybersecurity
+CIBR, Cybersecurity
+WCLD, Cloud Tech
+CLOU, Cloud Infra & SaaS
+FDN, US Internet Giants
+XSD, Semiconductors
+ROBO, Robotics & Automation
+BOTZ, AI & Robotics
+KCE, Capital Markets & Financials
+IPAY, Digital Payments & Fintech
+ARKF, ARK Fintech
+XHE, Health Devices
+IHI, Med-Tech & Surgical
+PAVE, US Infrastructure
+GRID, Infrastructure & Electrical
+ITB, Homebuilders
+IYZ, Telecommunications
+LIT, Lithium & Battery
+WOOD, Timber & Lumber
+KWEB, Chinese Tech & E-Commerce
+CHIQ, China Consumer
+IBUY, Global E-Commerce
+ARKX, ARK Space Exploration
+ARKG, ARK Genomics
+SVIX, Short VIX Futures
+#Stocks
+NVDA, NVIDIA
+AAPL, Apple
+MSFT, Microsoft
+AMZN, Amazon
+GOOGL, Alphabet
+AMD, AMD
+TSLA, Tesla
+COIN, Coinbase
+BABA, Alibaba`;
+
+/* ---------- State ---------- */
+let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, name}]
+let benchmark = localStorage.getItem(LS.bench) || 'SPY';
+if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); } // migrate broken symbol
+let windowN = +(localStorage.getItem(LS.win) || 25);
+let sortMode = localStorage.getItem('rs.sort') || 'orig';
+
+/* ---------- Parsing ---------- */
+function parseTickers(text){
+  const out = [];
+  text.split(/\r?\n/).forEach(raw=>{
+    const line = raw.trim();
+    if(!line) return;
+    if(line.startsWith('#')){ out.push({type:'group', label:line.slice(1).trim()}); return; }
+    const [tk, ...rest] = line.split(',');
+    const ticker = tk.trim().toUpperCase();
+    if(!ticker) return;
+    out.push({type:'tk', ticker, name:(rest.join(',').trim()||ticker)});
+  });
+  return out;
+}
+function loadTickers(){
+  const raw = localStorage.getItem(LS.tickers) || DEFAULT_TICKERS;
+  ROWS = parseTickers(raw);
+}
+
+/* ---------- Sparkline (histogram) ---------- */
+function histogramSVG(series, opts={}){
+  // series = array of normalized RS values (relative to first). We plot deviation from 1.
+  const w = 100, h = 34, n = series.length;
+  if(!n) return `<svg class="spark empty" viewBox="0 0 ${w} ${h}"></svg>`;
+  const devs = series.map(v => v - 1);                 // center at 0
+  const maxAbs = Math.max(0.0001, ...devs.map(d=>Math.abs(d)));
+  const bw = w / n, gap = Math.min(1.2, bw*0.18), mid = h/2;
+  let bars = '';
+  const last = n-1;
+  devs.forEach((d,i)=>{
+    const bh = Math.max(0.8, (Math.abs(d)/maxAbs) * (h/2 - 1));
+    const x = i*bw + gap/2;
+    const bwi = bw - gap;
+    const up = d >= 0;
+    const y = up ? mid - bh : mid;
+    // fade older bars a touch; highlight most recent
+    const isLast = i===last;
+    const col = up ? 'var(--up)' : 'var(--down)';
+    const op = isLast ? 1 : (0.42 + 0.5*(i/last||0));
+    bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bwi.toFixed(2)}" height="${bh.toFixed(2)}" rx="0.4" fill="${col}" opacity="${op.toFixed(2)}"/>`;
+  });
+  const zero = `<line x1="0" y1="${mid}" x2="${w}" y2="${mid}" stroke="var(--line)" stroke-width="0.6"/>`;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${zero}${bars}</svg>`;
+}
+
+/* ---------- Percentile (Excel PERCENTRANK.INC equivalent) ---------- */
+function percentRank(arr, x){
+  const a = [...arr].sort((p,q)=>p-q), N=a.length;
+  if(N<2) return null;
+  if(x<=a[0]) return 0; if(x>=a[N-1]) return 1;
+  let i=0; while(i<N-1 && a[i+1]<=x) i++;
+  if(a[i]===x) return i/(N-1);
+  const lo=a[i], hi=a[i+1];
+  return (i + (x-lo)/(hi-lo))/(N-1);
+}
+function weightedThrust(rs){
+  // 1-week weighted RS: gewichtete Summe der täglichen RS-Wachstumsraten über die letzten 5 Tage.
+  // Gewichte 5,4,3,2,1 (jüngster Tag am stärksten). Ergebnis als % um 100 herum.
+  const n = rs.length;
+  if(n < 2) return null;
+  const days = Math.min(5, n-1);
+  const weights = [];
+  for(let k=days;k>=1;k--) weights.push(k);       // z.B. [5,4,3,2,1]
+  const wsum = weights.reduce((a,b)=>a+b,0);
+  let acc = 0;
+  for(let j=0;j<days;j++){
+    const idx = n-1-j;                              // jüngster zuerst
+    const chg = rs[idx]/rs[idx-1] - 1;
+    acc += chg * weights[j];
+  }
+  const wAvg = acc / wsum;                          // gewichtete mittlere Tagesänderung
+  return 1 + wAvg * 5;                              // auf Woche hochrechnen, um 100% zentriert
+}
+function stsColor(p){
+  if(p==null) return {bg:'transparent',fg:'var(--faint)'};
+  // green ramp like the sheet's conditional formatting
+  if(p>=0.85) return {bg:'#14532d',fg:'#bbf7d0'};
+  if(p>=0.65) return {bg:'#166534',fg:'#dcfce7'};
+  if(p>=0.45) return {bg:'#1e3a2a',fg:'#a7f3d0'};
+  if(p>=0.25) return {bg:'#1c2432',fg:'#94a3b8'};
+  return {bg:'transparent',fg:'var(--faint)'};
+}
+
+/* ---------- Rendering ---------- */
+function render(dataMap){
+  const main = $('#main');
+  if(!localStorage.getItem(LS.key)){
+    main.innerHTML = emptyState('setup'); return;
+  }
+  if(!ROWS.length){ main.innerHTML = emptyState('tickers'); return; }
+
+  let html = '';
+  // benchmark pinned first
+  const b = dataMap && dataMap[benchmark];
+  html += `<div class="group-head">Benchmark</div>`;
+  html += rowHTML({type:'tk', ticker:benchmark, name:'Referenz'}, null, true, b);
+
+  // split ROWS into group blocks, sort within each block
+  const blocks = [];
+  let cur = {label:null, items:[]};
+  ROWS.forEach(r=>{
+    if(r.type==='group'){ if(cur.items.length||cur.label!==null) blocks.push(cur); cur={label:r.label, items:[]}; }
+    else cur.items.push(r);
+  });
+  if(cur.items.length||cur.label!==null) blocks.push(cur);
+
+  const val = (r)=>{
+    const d = dataMap && dataMap[r.ticker];
+    if(!d) return -Infinity;
+    if(sortMode==='pct') return d.pct==null?-Infinity:d.pct;
+    if(sortMode==='thrust') return d.thrust==null?-Infinity:d.thrust;
+    if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
+    return 0;
+  };
+  blocks.forEach(bl=>{
+    if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>`;
+    let items = bl.items;
+    if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
+    items.forEach(r=>{
+      const d = dataMap && dataMap[r.ticker];
+      html += rowHTML(r, d, false, null);
+    });
+  });
+  main.innerHTML = html;
+}
+function rowHTML(r, d, isBench, benchData){
+  let spark='', sts='', chg='', chgCls='', barCol='transparent';
+  if(isBench){
+    spark = `<svg class="spark empty" viewBox="0 0 100 34"><line x1="0" y1="17" x2="100" y2="17" stroke="var(--line)" stroke-width="0.6"/></svg>`;
+    sts = `<span class="sts" style="color:var(--faint)">—</span>`;
+    if(benchData && benchData.lastClose!=null){
+      chg = fmtChg(benchData.dayChg); chgCls = benchData.dayChg>=0?'pos':'neg';
+    }
+  } else if(d && d.rs && d.rs.length){
+    spark = histogramSVG(d.rs);
+    const p = d.pct;
+    const c = stsColor(p);
+    sts = `<span class="sts" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
+    if(p!=null){ barCol = p>=0.65?'var(--up)':(p<0.3?'var(--down)':'var(--faint)'); }
+    if(d.dayChg!=null){ chg = fmtChg(d.dayChg); chgCls = d.dayChg>=0?'pos':'neg'; }
+  } else {
+    spark = `<svg class="spark empty" viewBox="0 0 100 34"><line x1="0" y1="17" x2="100" y2="17" stroke="var(--line)" stroke-width="0.6"/></svg>`;
+    sts = `<span class="sts" style="color:var(--faint)">·</span>`;
+  }
+  const nm = r.name && r.name!==r.ticker ? `<span class="nm">${esc(r.name)}</span>` : '';
+  let meta='';
+  if(!isBench && d && d.rs && d.rs.length){
+    const thr = d.thrust!=null ? Math.round(d.thrust*100)+'%' : '–';
+    const thrCol = d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)');
+    const m1  = d.pct!=null ? Math.round(d.pct*100/5)*5+'%' : '–';
+    meta = `<span class="meta"><span class="lab">THR</span><span class="thr" style="color:${thrCol}">${thr}</span><span class="lab">1M</span><span class="m1">${m1}</span></span>`;
+  }
+  return `<div class="row${isBench?' bench-row':''}">
+    <span class="rank-badge" style="background:${barCol}"></span>
+    <span class="tk">${esc(r.ticker)}${nm}${meta}</span>
+    ${spark}
+    ${sts}
+    <span class="chg ${chgCls}">${chg}</span>
+  </div>`;
+}
+function fmtChg(v){ if(v==null||isNaN(v)) return ''; const s=v>=0?'+':''; return s+v.toFixed(1)+'%'; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function emptyState(kind){
+  if(kind==='setup') return `<div class="empty-state">
+    <h2>Erst einrichten</h2>
+    <p>Trag deinen <span class="k">Twelve Data API-Key</span> im Setup ein.
+    Er ist kostenlos und bleibt nur auf diesem Gerät.</p>
+    <button class="btn-primary" style="max-width:240px;margin:0 auto" onclick="openSheet('set')">Zum Setup</button>
+  </div>`;
+  return `<div class="empty-state"><h2>Keine Ticker</h2><p>Füg unter <span class="k">Ticker</span> Symbole hinzu.</p></div>`;
+}
+
+/* ---------- Data fetch ---------- */
+const API = 'https://api.twelvedata.com/time_series';
+async function fetchSeries(symbol, key, outputsize){
+  const url = `${API}?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${outputsize}&order=ASC&apikey=${encodeURIComponent(key)}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if(j.status==='error') throw new Error(j.message||'API-Fehler ('+symbol+')');
+  if(!j.values) return null;
+  return j.values.map(v=>({d:v.datetime, c:parseFloat(v.close)})).filter(v=>!isNaN(v.c));
+}
+
+async function refresh(){
+  const key = localStorage.getItem(LS.key);
+  if(!key){ openSheet('set'); return; }
+  const need = windowN + 3; // small buffer
+
+  // unique symbols
+  const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
+  showStatus('live','Lade Benchmark …','');
+
+  // 1) benchmark with automatic fallback -> SPY (works if chosen symbol errors OR returns empty)
+  let benchSym = benchmark, benchSeries=null, benchErr='';
+  try{
+    benchSeries = await fetchSeries(benchSym, key, need);
+  }catch(e){ benchErr = e.message||String(e); }
+  if((!benchSeries || benchSeries.length<3) && benchmark!=='SPY'){
+    toast('Benchmark '+benchmark+' liefert keine Daten – nutze SPY', true);
+    benchSym='SPY';
+    try{ benchSeries = await fetchSeries('SPY', key, need); }catch(e2){ benchErr = e2.message||benchErr; }
+  }
+  if(!benchSeries || benchSeries.length<3){
+    showStatus('err','Benchmark fehlgeschlagen', benchErr.slice(0,40));
+    toast(benchErr ? benchErr.slice(0,80) : 'Benchmark-Daten fehlen. API-Key / Symbol prüfen.', true);
+    return;
+  }
+  const benchMap = Object.fromEntries(benchSeries.map(v=>[v.d,v.c]));
+  const benchLast = benchSeries.at(-1).c, benchPrev = benchSeries.at(-2)?.c;
+
+  const dataMap = {};
+  dataMap[benchmark] = {lastClose:benchLast, dayChg: benchPrev?((benchLast/benchPrev-1)*100):null};
+
+  // 2) each ticker, throttled to respect 8 req/min (free tier)
+  let done=0, failed=[];
+  const RATE_MS = 8100; // ~7.4/min, safe margin
+  for(const sym of syms){
+    if(sym===benchSym){ continue; }
+    showStatus('live', `Lade ${sym} …`, `${done}/${syms.length}`);
+    try{
+      const s = await fetchSeries(sym, key, need);
+      if(s && s.length>=3){
+        // align to benchmark dates, compute RS = close/benchClose, normalize to first
+        const aligned = s.filter(v=>benchMap[v.d]!=null).slice(-windowN);
+        if(aligned.length>=3){
+          const rsRaw = aligned.map(v=> v.c / benchMap[v.d]);
+          const base = rsRaw[0];
+          const rs = rsRaw.map(x=> x/base);
+          const pct = percentRank(rs, rs.at(-1));
+          // Thrust = 1-Wochen gewichtete RS (Jeffs "RS Thrust Rate %").
+          // Gewichtete mittlere Tagesänderung der RS über die letzten 5 Tage (heute am stärksten),
+          // skaliert auf 100% = neutral. >100% zieht an, <100% fällt zurück.
+          const thrust = weightedThrust(rs);
+          const last=s.at(-1).c, prev=s.at(-2)?.c;
+          dataMap[sym] = {rs, pct, thrust, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+        }
+      }
+    }catch(e){ failed.push(sym); }
+    done++;
+    render(dataMap);
+    saveCache(dataMap);
+    if(done<syms.length) await sleep(RATE_MS);
+  }
+  const when = new Date().toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  showStatus('live', failed.length?`Fertig · ${failed.length} fehlten`:'Aktuell', when);
+  if(failed.length) toast('Nicht geladen: '+failed.slice(0,6).join(', ')+(failed.length>6?' …':''), true);
+}
+
+function saveCache(map){ try{ localStorage.setItem(LS.cache, JSON.stringify({t:Date.now(),map})); }catch(e){} }
+function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(LS.cache)); return c?c.map:null; }catch(e){ return null; } }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ---------- Status / toast ---------- */
+function showStatus(kind,text,meta){
+  const s=$('#status'); s.classList.remove('hidden');
+  $('#statusDot').className='dot '+(kind==='err'?'err':(kind==='live'?'live':''));
+  $('#statusText').textContent=text; $('#statusMeta').textContent=meta||'';
+}
+let toastT;
+function toast(msg,isErr){
+  const t=$('#toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':'');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(isErr?' err':''),3200);
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(which){
+  const bg = which==='ticker'?$('#tickerBg'):$('#setBg');
+  const sh = which==='ticker'?$('#tickerSheet'):$('#setSheet');
+  if(which==='ticker'){ $('#tickerText').value = localStorage.getItem(LS.tickers)||DEFAULT_TICKERS; }
+  if(which==='set'){
+    $('#apiKey').value = localStorage.getItem(LS.key)||'';
+    $('#benchSel').value = benchmark;
+    $('#windowN').value = windowN;
+  }
+  bg.classList.add('open'); sh.classList.add('open');
+}
+function closeSheets(){
+  document.querySelectorAll('.sheet-bg,.sheet').forEach(el=>el.classList.remove('open'));
+}
+
+/* ---------- Wire up ---------- */
+$('#btnRefresh').onclick = refresh;
+$('#btnTickers').onclick = ()=>openSheet('ticker');
+$('#btnSettings').onclick = ()=>openSheet('set');
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
+$('#tickerBg').onclick=closeSheets; $('#setBg').onclick=closeSheets;
+
+// Sortier-Chips
+document.querySelectorAll('.chip[data-sort]').forEach(c=>{
+  c.onclick = ()=>{
+    sortMode = c.dataset.sort;
+    localStorage.setItem('rs.sort', sortMode);
+    document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x===c));
+    render(loadCache());
+  };
+});
+
+$('#saveTickers').onclick = ()=>{
+  const txt = $('#tickerText').value;
+  localStorage.setItem(LS.tickers, txt);
+  loadTickers(); closeSheets();
+  render(loadCache());
+  toast('Ticker gespeichert'); 
+  setTimeout(refresh, 250);
+};
+$('#resetTickers').onclick = ()=>{
+  $('#tickerText').value = DEFAULT_TICKERS;
+  localStorage.setItem(LS.tickers, DEFAULT_TICKERS);
+  loadTickers(); toast('Standardliste geladen');
+};
+$('#saveSettings').onclick = ()=>{
+  const k=$('#apiKey').value.trim();
+  localStorage.setItem(LS.key, k);
+  benchmark = $('#benchSel').value; localStorage.setItem(LS.bench, benchmark);
+  windowN = Math.max(10,Math.min(60,+$('#windowN').value||25)); localStorage.setItem(LS.win, windowN);
+  $('#benchLabel').textContent = benchmark;
+  closeSheets();
+  if(k){ toast('Gespeichert'); setTimeout(refresh,250); }
+  else { render(null); }
+};
+
+$('#testConn').onclick = async ()=>{
+  const k=$('#apiKey').value.trim();
+  const res=$('#testResult');
+  if(!k){ res.innerHTML='<span style="color:var(--down)">Kein API-Key eingegeben.</span>'; return; }
+  const chosen=$('#benchSel').value;
+  const probes=[...new Set([chosen,'SPY','QQQ'])];
+  res.innerHTML='Teste …';
+  let out=[];
+  for(const sym of probes){
+    try{
+      const r=await fetch(`${API}?symbol=${encodeURIComponent(sym)}&interval=1day&outputsize=2&apikey=${encodeURIComponent(k)}`);
+      const j=await r.json();
+      if(j.status==='error') out.push(`<div><b style="color:var(--down)">✕ ${sym}</b> — ${esc((j.message||'').slice(0,60))}</div>`);
+      else if(j.values) out.push(`<div><b style="color:var(--up)">✓ ${sym}</b> — ok</div>`);
+      else out.push(`<div><b style="color:var(--gold)">? ${sym}</b> — keine Daten</div>`);
+    }catch(e){ out.push(`<div><b style="color:var(--down)">✕ ${sym}</b> — Netzwerkfehler</div>`); }
+    res.innerHTML=out.join('');
+  }
+  const okChosen = out[0].includes('✓');
+  out.push(`<div style="margin-top:8px;color:var(--dim)">${okChosen?'Benchmark <b>'+chosen+'</b> funktioniert.':'Benchmark <b>'+chosen+'</b> geht nicht – nimm ein Symbol mit ✓ (meist SPY).'}</div>`);
+  res.innerHTML=out.join('');
+};
+
+/* ---------- Init ---------- */
+loadTickers();
+$('#benchLabel').textContent = benchmark;
+document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x.dataset.sort===sortMode));
+render(loadCache());
+if('serviceWorker' in navigator){/* offline shell optional */}
+</script>
+</body>
+</html>
