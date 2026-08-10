@@ -1,0 +1,13 @@
+# iPhone-Screenshots / Referenzbilder aus X — lokal nützlich, gehören nicht ins Repo
+IMG_*.PNG
+IMG_*.png
+*.jpg
+*.jpeg
+
+# persönliche Claude-Code-Einstellungen
+.claude/settings.local.json
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+desktop.ini

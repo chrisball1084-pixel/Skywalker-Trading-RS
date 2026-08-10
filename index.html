@@ -223,15 +223,24 @@
     <label class="field">
       <span class="lab">Benchmark (Referenz für RS)</span>
       <select class="inp" id="benchSel">
-        <option value="SPY">SPY — SPDR S&P 500 ETF (sicher, immer verfügbar)</option>
+        <option value="RSP">RSP — S&P 500 Equal Weight (Jeffs aktueller Benchmark)</option>
+        <option value="SPY">SPY — SPDR S&P 500 ETF (Jeffs Original 2024)</option>
         <option value="SPX">SPX — S&P 500 Index (nur mit Index-Zugang)</option>
       </select>
-      <span class="hint">Free-Tier deckt <b>SPY</b> zuverlässig ab. Index-Daten (SPX) sind oft kostenpflichtig – falls SPX keine Daten liefert, schaltet die App automatisch auf SPY um. Nutz „Verbindung testen", um sicherzugehen.</span>
+      <span class="hint">Jeff nutzt seit dem Umbau <b>RSP</b> (Equal Weight) — dadurch misst RS die Breite statt der Mega-Cap-Gewichtung. Index-Daten (SPX) sind oft kostenpflichtig; liefert der Benchmark keine Daten, schaltet die App automatisch auf SPY um.</span>
     </label>
     <label class="field">
       <span class="lab">Zeitfenster (Handelstage)</span>
-      <input class="inp" id="windowN" type="number" min="10" max="60" value="25">
-      <span class="hint">Jeff nutzt 25. Das ist die Anzahl Tage im Histogramm und die Basis für RS_STS %.</span>
+      <input class="inp" id="windowN" type="number" min="10" max="60" value="21">
+      <span class="hint">Jeffs aktuelles Sheet nutzt <b>21</b> (die 1-Mth-RS-Werte rastern exakt in 5 %-Schritten = 1/20). Das Tutorial von 2024 nutzte 25. Anzahl Tage im Histogramm und Basis für RS_STS %.</span>
+    </label>
+    <label class="field">
+      <span class="lab">RS %-Spalte (Berechnung)</span>
+      <select class="inp" id="pctSel">
+        <option value="time">Zeit-Perzentil — Jeffs Formel</option>
+        <option value="peer">Peer-Rang innerhalb der Gruppe</option>
+      </select>
+      <span class="hint"><b>Zeit-Perzentil</b> = wo die heutige RS innerhalb der eigenen letzten <span id="pctWinLbl">21</span> Tage steht. Das ist Jeffs Excel-Formel <span style="color:var(--accent)">=PERCENTRANK(AF3:BD3,BD3)</span>.<br><b>Peer-Rang</b> = Rang gegen die anderen Ticker derselben Gruppe. Interessant als Zweitmeinung, entspricht aber nicht dem Sheet.</span>
     </label>
     <button class="btn-primary" id="saveSettings">Speichern</button>
     <button class="btn-ghost" id="testConn">Verbindung testen</button>
@@ -252,6 +261,7 @@ const $ = s => document.querySelector(s);
 
 /* ---------- Default ticker list (from Jeff Sun's screenshots) ---------- */
 const DEFAULT_TICKERS = `#Index
+SPY, S&P 500 (cap-weighted)
 QQQ, Nasdaq-100
 QQQE, Nasdaq-100 EW
 IWM, Russell 2000
@@ -269,6 +279,7 @@ IVE, LargeCap 500 Value
 IVV, S&P 500
 IVW, LargeCap 500 Growth
 #Equal-Weight Sektoren
+SPY, S&P 500 (Anker)
 RSPM, EW Materials
 RSPD, EW Discretionary
 RSPN, EW Industrial
@@ -281,6 +292,7 @@ RSPR, EW Real Estate
 RSPU, EW Utilities
 RSPG, EW Energy
 #SPDR Sektoren
+SPY, S&P 500 (Anker)
 XLB, Materials
 XLI, Industrials
 XLF, Financials
@@ -353,9 +365,22 @@ BABA, Alibaba`;
 
 /* ---------- State ---------- */
 let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, name}]
-let benchmark = localStorage.getItem(LS.bench) || 'SPY';
+
+// Einmalige Migration auf Jeffs aktuelles Setup (Stand 10.08.2026): Benchmark RSP, Fenster 21.
+// Cache wird verworfen, weil alle RS-Reihen jetzt gegen einen anderen Nenner laufen.
+if(!localStorage.getItem('rs.mig.rsp')){
+  localStorage.setItem(LS.bench,'RSP');
+  localStorage.setItem(LS.win,'21');
+  localStorage.removeItem(LS.cache);
+  localStorage.removeItem('rs.loaded');
+  localStorage.setItem('rs.mig.rsp','1');
+}
+
+let benchmark = localStorage.getItem(LS.bench) || 'RSP';
 if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); } // migrate broken symbol
-let windowN = +(localStorage.getItem(LS.win) || 25);
+let windowN = +(localStorage.getItem(LS.win) || 21);
+let activeBench = benchmark;   // tatsächlich verwendeter Benchmark (kann per Fallback abweichen)
+let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' = Jeffs PERCENTRANK, 'peer' = Rang in der Gruppe
 let sortMode = localStorage.getItem('rs.sort') || 'orig';
 
 /* ---------- Parsing ---------- */
@@ -387,16 +412,19 @@ function histogramSVG(series, opts={}){
   const bw = w / n, gap = Math.min(1.2, bw*0.18), mid = h/2;
   let bars = '';
   const last = n-1;
+  // Jeffs Legende: "The dark green bar indicates the RS high point."
+  let hiIdx = 0;
+  for(let i=1;i<n;i++) if(series[i] > series[hiIdx]) hiIdx = i;
   devs.forEach((d,i)=>{
     const bh = Math.max(0.8, (Math.abs(d)/maxAbs) * (h/2 - 1));
     const x = i*bw + gap/2;
     const bwi = bw - gap;
     const up = d >= 0;
     const y = up ? mid - bh : mid;
-    // fade older bars a touch; highlight most recent
+    // fade older bars a touch; highlight most recent + RS-Hochpunkt
     const isLast = i===last;
-    const col = up ? 'var(--up)' : 'var(--down)';
-    const op = isLast ? 1 : (0.42 + 0.5*(i/last||0));
+    const col = i===hiIdx ? 'var(--gold)' : (up ? 'var(--up)' : 'var(--down)');
+    const op = (isLast || i===hiIdx) ? 1 : (0.42 + 0.5*(i/last||0));
     bars += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bwi.toFixed(2)}" height="${bh.toFixed(2)}" rx="0.4" fill="${col}" opacity="${op.toFixed(2)}"/>`;
   });
   const zero = `<line x1="0" y1="${mid}" x2="${w}" y2="${mid}" stroke="var(--line)" stroke-width="0.6"/>`;
@@ -451,9 +479,9 @@ function render(dataMap){
 
   let html = '';
   // benchmark pinned first
-  const b = dataMap && dataMap[benchmark];
+  const b = dataMap && dataMap[activeBench];
   html += `<div class="group-head">Benchmark</div>`;
-  html += rowHTML({type:'tk', ticker:benchmark, name:'Referenz'}, null, true, b);
+  html += rowHTML({type:'tk', ticker:activeBench, name:'Referenz'}, null, true, b);
 
   // split ROWS into group blocks, sort within each block
   const blocks = [];
@@ -500,8 +528,7 @@ function rowHTML(r, d, isBench, benchData){
     if(d.dayChg!=null){ chg = fmtChg(d.dayChg); chgCls = d.dayChg>=0?'pos':'neg'; }
     const thr = d.thrust!=null ? Math.round(d.thrust*100)+'%' : '–';
     const thrCol = d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)');
-    const m1 = d.pct!=null ? Math.round(d.pct*100/5)*5+'%' : '–';
-    metaLine = `<span class="meta"><span class="lab">THR</span><span style="color:${thrCol}">${thr}</span><span class="lab">1M</span><span style="color:var(--dim)">${m1}</span></span>`;
+    metaLine = `<span class="meta"><span class="lab">THR</span><span style="color:${thrCol}">${thr}</span></span>`;
   } else {
     spark = emptySpark;
     sts = `<span class="sts" style="color:var(--faint)">·</span>`;
@@ -521,11 +548,27 @@ function rowHTML(r, d, isBench, benchData){
 function fmtChg(v){ if(v==null||isNaN(v)) return ''; const s=v>=0?'+':''; return s+v.toFixed(1)+'%'; }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-// TradingView-Chart öffnen (Deep-Link; iOS-App fängt ihn ab, sonst Web)
+// TradingView-Chart öffnen.
+// window.open('https://…') landet aus einer installierten PWA heraus immer im Safari-Sheet,
+// weil Universal Links dort nicht greifen. Darum zuerst das App-Schema versuchen und erst
+// nach kurzer Wartezeit auf die Website zurückfallen, falls die App nicht reagiert hat.
 function openTV(ticker, ev){
   if(ev){ ev.stopPropagation(); ev.preventDefault(); }
-  const url = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(ticker);
-  window.open(url, '_blank');
+  const sym = encodeURIComponent(ticker);
+  const web = 'https://www.tradingview.com/chart/?symbol=' + sym;
+  const app = 'tradingview://chart?symbol=' + sym;
+
+  let switched = false;
+  const onHide = ()=>{ if(document.hidden) switched = true; };
+  document.addEventListener('visibilitychange', onHide);
+  window.addEventListener('pagehide', onHide);
+
+  window.location.href = app;   // schlägt still fehl, wenn die App fehlt
+  setTimeout(()=>{
+    document.removeEventListener('visibilitychange', onHide);
+    window.removeEventListener('pagehide', onHide);
+    if(!switched && !document.hidden) window.open(web, '_blank');
+  }, 800);
 }
 // Namen + Kennzahlen als Popover zeigen (Tap auf Ticker)
 let nmPopTimer;
@@ -599,9 +642,12 @@ async function refresh(opts={}){
     toast(benchErr ? benchErr.slice(0,80) : 'Benchmark-Daten fehlen. API-Key / Symbol prüfen.', true);
     return;
   }
+  // Bei Fallback zeigt die App den tatsächlich verwendeten Benchmark an, nicht den gewünschten.
+  activeBench = benchSym;
+  $('#benchLabel').textContent = benchSym + (benchSym!==benchmark ? ' *' : '');
   const benchMap = Object.fromEntries(benchSeries.map(v=>[v.d,v.c]));
   const benchLast = benchSeries.at(-1).c, benchPrev = benchSeries.at(-2)?.c;
-  dataMap[benchmark] = {lastClose:benchLast, dayChg: benchPrev?((benchLast/benchPrev-1)*100):null};
+  dataMap[benchSym] = {lastClose:benchLast, dayChg: benchPrev?((benchLast/benchPrev-1)*100):null};
 
   // 2) Nur fehlende Ticker laden (die heute noch nicht geladen wurden), außer forceAll
   const todo = syms.filter(sym=>{
@@ -613,7 +659,7 @@ async function refresh(opts={}){
   });
 
   if(todo.length===0){
-    computePeerRanks(dataMap);
+    applyPct(dataMap);
     render(dataMap); saveCache(dataMap);
     showStatus('live','Alles aktuell (heute geladen)', new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}));
     toast('Alle Ticker heute schon geladen. „Alles neu laden" im Setup erzwingt Neuladen.');
@@ -636,7 +682,7 @@ async function refresh(opts={}){
           const timePct = percentRank(rs, rs.at(-1));
           const thrust = weightedThrust(rs);
           const last=s.at(-1).c, prev=s.at(-2)?.c;
-          dataMap[sym] = {rs, timePct, thrust, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+          dataMap[sym] = {rs, timePct, pct:timePct, thrust, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
           loadedToday[sym] = true;
         }
       }
@@ -649,13 +695,13 @@ async function refresh(opts={}){
       failed.push(sym);
     }
     done++;
-    computePeerRanks(dataMap);
+    applyPct(dataMap);
     render(dataMap);
     saveCache(dataMap);
     saveLoadedToday(todayKey, loadedToday);
     if(done<totalTodo) await sleep(RATE_MS);
   }
-  computePeerRanks(dataMap);
+  applyPct(dataMap);
   render(dataMap); saveCache(dataMap);
   const when = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
   if(limitHit){
@@ -668,9 +714,12 @@ async function refresh(opts={}){
   }
 }
 
-// Peer-Ranking: 1M = Perzentilrang der heutigen RS INNERHALB jeder Gruppe (wie Jeffs Dashboard)
+// RS_STS % = Zeit-Perzentil der heutigen RS innerhalb des Fensters.
+// Jeffs Excel-Formel (Screenshot vom 15.07.2024): =PERCENTRANK(AF3:BD3,BD3)
+// -> also PERCENTRANK.INC der letzten RS gegen die eigene Reihe, NICHT gegen die Peer-Gruppe.
+// Alternative: Perzentilrang der heutigen RS INNERHALB der Gruppe (frühere Annahme).
+// Bleibt als Vergleichsmodus erhalten, ist aber nicht Jeffs Formel.
 function computePeerRanks(dataMap){
-  // Gruppen-Blöcke aus ROWS bilden
   let cur=[]; const groups=[];
   ROWS.forEach(r=>{
     if(r.type==='group'){ if(cur.length) groups.push(cur); cur=[]; }
@@ -678,19 +727,23 @@ function computePeerRanks(dataMap){
   });
   if(cur.length) groups.push(cur);
   groups.forEach(tickers=>{
-    // aktuelle RS-Werte (letzter Wert der rs-Reihe) der Gruppenmitglieder mit Daten
     const vals = tickers.map(t=>{
       const d=dataMap[t];
       return (d&&d.rs&&d.rs.length)? d.rs.at(-1) : null;
     }).filter(v=>v!=null);
     tickers.forEach(t=>{
       const d=dataMap[t];
-      if(d&&d.rs&&d.rs.length && vals.length>=2){
-        d.pct = percentRank(vals, d.rs.at(-1));   // Peer-Rang -> ersetzt "1M"
-      } else if(d&&d.rs&&d.rs.length){
-        d.pct = d.timePct!=null?d.timePct:null;   // Einzelgänger: fallback Zeit-Perzentil
-      }
+      if(!d||!d.rs||!d.rs.length) return;
+      d.pct = vals.length>=2 ? percentRank(vals, d.rs.at(-1)) : (d.timePct??null);
     });
+  });
+}
+
+function applyPct(dataMap){
+  if(!dataMap) return;
+  if(pctMode==='peer'){ computePeerRanks(dataMap); return; }
+  Object.values(dataMap).forEach(d=>{
+    if(d && d.rs && d.rs.length) d.pct = (d.timePct!=null ? d.timePct : null);
   });
 }
 
@@ -710,7 +763,7 @@ const sleep = ms => new Promise(r=>setTimeout(r,ms));
 // Aus Cache rendern und dabei Peer-Ranks frisch berechnen (konsistente 1M-Anzeige)
 function renderCached(){
   const m = loadCache();
-  if(m) computePeerRanks(m);
+  if(m) applyPct(m);
   render(m);
 }
 
@@ -735,6 +788,8 @@ function openSheet(which){
     $('#apiKey').value = localStorage.getItem(LS.key)||'';
     $('#benchSel').value = benchmark;
     $('#windowN').value = windowN;
+    $('#pctSel').value = pctMode;
+    $('#pctWinLbl').textContent = windowN;
   }
   bg.classList.add('open'); sh.classList.add('open');
 }
@@ -775,12 +830,22 @@ $('#resetTickers').onclick = ()=>{
 $('#saveSettings').onclick = ()=>{
   const k=$('#apiKey').value.trim();
   localStorage.setItem(LS.key, k);
+
+  const prevBench = benchmark, prevWin = windowN;
   benchmark = $('#benchSel').value; localStorage.setItem(LS.bench, benchmark);
-  windowN = Math.max(10,Math.min(60,+$('#windowN').value||25)); localStorage.setItem(LS.win, windowN);
+  windowN = Math.max(10,Math.min(60,+$('#windowN').value||21)); localStorage.setItem(LS.win, windowN);
+  pctMode = $('#pctSel').value; localStorage.setItem('rs.pctmode', pctMode);
+  activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
   closeSheets();
-  if(k){ toast('Gespeichert'); setTimeout(refresh,250); }
-  else { render(null); }
+
+  // Benchmark oder Fenster geändert -> alle RS-Reihen sind ungültig, Tages-Cache verwerfen.
+  const stale = (benchmark!==prevBench) || (windowN!==prevWin);
+  if(stale){ localStorage.removeItem(LS.cache); localStorage.removeItem('rs.loaded'); }
+
+  if(!k){ render(null); return; }
+  if(stale){ toast('Benchmark/Fenster geändert – lade alles neu …'); setTimeout(()=>refresh({force:true}),250); }
+  else { toast('Gespeichert'); renderCached(); setTimeout(refresh,250); }
 };
 
 $('#forceReload').onclick = ()=>{
