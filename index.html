@@ -8,13 +8,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Skywalker RS">
 <title>Skywalker RS</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230a0e14'/%3E%3Cg fill='%234ade80'%3E%3Crect x='30' y='110' width='12' height='40'/%3E%3Crect x='48' y='90' width='12' height='60'/%3E%3Crect x='66' y='70' width='12' height='80'/%3E%3Crect x='84' y='50' width='12' height='100'/%3E%3Crect x='102' y='64' width='12' height='86'/%3E%3Crect x='120' y='40' width='12' height='110'/%3E%3Crect x='138' y='58' width='12' height='92'/%3E%3C/g%3E%3C/svg%3E">
-<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Skywalker%20RS%22%2C%22short_name%22%3A%22Skywalker%20RS%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0e14%22%2C%22theme_color%22%3A%22%230a0e14%22%2C%22start_url%22%3A%22.%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2527http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2527%2520viewBox%253D%25270%25200%2520180%2520180%2527%253E%253Crect%2520width%253D%2527180%2527%2520height%253D%2527180%2527%2520fill%253D%2527%25230a0e14%2527%252F%253E%253Cg%2520fill%253D%2527%25234ade80%2527%253E%253Crect%2520x%253D%252784%2527%2520y%253D%252750%2527%2520width%253D%252712%2527%2520height%253D%2527100%2527%252F%253E%253C%252Fg%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230a0e14'/%3E%3Cg fill='%233ad6ff'%3E%3Crect x='30' y='110' width='12' height='40'/%3E%3Crect x='48' y='90' width='12' height='60'/%3E%3Crect x='66' y='70' width='12' height='80'/%3E%3Crect x='84' y='50' width='12' height='100'/%3E%3Crect x='102' y='64' width='12' height='86'/%3E%3Crect x='120' y='40' width='12' height='110'/%3E%3Crect x='138' y='58' width='12' height='92'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Skywalker%20RS%22%2C%22short_name%22%3A%22Skywalker%20RS%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0e14%22%2C%22theme_color%22%3A%22%230a0e14%22%2C%22start_url%22%3A%22.%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2527http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2527%2520viewBox%253D%25270%25200%2520180%2520180%2527%253E%253Crect%2520width%253D%2527180%2527%2520height%253D%2527180%2527%2520fill%253D%2527%25230a0e14%2527%252F%253E%253Cg%2520fill%253D%2527%25233ad6ff%2527%253E%253Crect%2520x%253D%252784%2527%2520y%253D%252750%2527%2520width%253D%252712%2527%2520height%253D%2527100%2527%252F%253E%253C%252Fg%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 <style>
   :root{
     --bg:#0a0e14; --panel:#111722; --panel2:#0d1420; --line:#1c2534;
     --ink:#e6edf3; --dim:#7d8aa0; --faint:#4a5568;
-    --up:#4ade80; --up-soft:#1a3325; --down:#f87171; --down-soft:#3a1f22;
+    --up:#3ad6ff; --up-soft:#0b2b3d; --down:#f87171; --down-soft:#3a1f22;
     --accent:#38bdf8; --gold:#fbbf24;
     --mono:'SF Mono',ui-monospace,'JetBrains Mono','Menlo',monospace;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
@@ -41,7 +41,7 @@
     display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:.12s;
   }
   button.tb:active{transform:scale(.97);background:var(--line)}
-  button.tb.primary{background:var(--up-soft);border-color:#254d38;color:var(--up)}
+  button.tb.primary{background:var(--up-soft);border-color:#1d5a78;color:var(--up)}
   button.tb svg{width:14px;height:14px}
 
   .sortbar{display:flex;align-items:center;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -50,7 +50,7 @@
   .chip{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--dim);
     font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:14px;cursor:pointer;transition:.12s;font-family:var(--sans)}
   .chip:active{transform:scale(.96)}
-  .chip.active{background:var(--up-soft);border-color:#2b5540;color:var(--up)}
+  .chip.active{background:var(--up-soft);border-color:#23617f;color:var(--up)}
 
   .nm-pop{position:fixed;left:12px;right:12px;z-index:50;background:var(--panel);border:1px solid var(--line);
     border-radius:10px;padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.15s;transform:translateY(-4px)}
@@ -181,7 +181,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.10-3</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.10-4</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -198,11 +198,7 @@
       Setup
     </button>
   </div>
-  <div class="sortbar" id="viewbar">
-    <span class="sortlbl">Ansicht</span>
-    <button class="chip active" data-view="list">Liste</button>
-    <button class="chip" data-view="dash">Übersicht</button>
-  </div>
+  <div class="sortbar" id="viewbar"></div>
   <div class="sortbar" id="sortbar">
     <span class="sortlbl">Sortieren</span>
     <button class="chip active" data-sort="orig">Original</button>
@@ -263,6 +259,14 @@
       <span class="lab">Zeitfenster (Handelstage)</span>
       <input class="inp" id="windowN" type="number" min="10" max="60" value="21">
       <span class="hint">Jeffs aktuelles Sheet nutzt <b>21</b> (die 1-Mth-RS-Werte rastern exakt in 5 %-Schritten = 1/20). Das Tutorial von 2024 nutzte 25. Anzahl Tage im Histogramm und Basis für RS_STS %.</span>
+    </label>
+    <label class="field">
+      <span class="lab">Datenstand</span>
+      <select class="inp" id="lagSel">
+        <option value="1">Wie Jeffs Sheet — ein Handelstag Versatz</option>
+        <option value="0">Aktuellster Handelstag</option>
+      </select>
+      <span class="hint">Jeffs Excel zieht die Historie über <span style="color:var(--accent)">STOCKHISTORY</span>, das beim letzten <i>abgeschlossenen</i> Tag endet — seine RS-Spalte hinkt deshalb einen Tag hinterher. Mit Versatz treffen wir sein Sheet exakt (58 von 58 Tickern geprüft). Ohne Versatz sind die Zahlen aktueller, weichen aber von seinen ab.</span>
     </label>
     <label class="field">
       <span class="lab">RS %-Spalte (Berechnung)</span>
@@ -365,6 +369,7 @@ GNR, Natural Resources
 PHO, Water Purification & Infrastructure
 URA, Uranium
 URNM, Uranium Miners
+ESPO, E-Sports
 NLR, Nuclear Power
 ITA, Aerospace & Defense
 XAR, Aerospace & Defense EW
@@ -385,6 +390,7 @@ IPAY, Digital Payments & Fintech
 ARKF, ARK Fintech
 XHE, Health Devices
 IHI, Med-Tech & Surgical
+XPH, Pharmaceuticals EW
 PAVE, US Infrastructure
 GRID, Infrastructure & Electrical
 ITB, Homebuilders
@@ -395,6 +401,10 @@ KWEB, Chinese Tech & E-Commerce
 CHIQ, China Consumer
 IBUY, Global E-Commerce
 ARKX, ARK Space Exploration
+UFO, Space Industry
+ARKQ, ARK Autonomous & Robotics
+QTUM, Quantum & AI
+OIH, Large-Cap Oil Services
 ARKG, ARK Genomics
 SVIX, Short VIX Futures
 #Stocks
@@ -433,9 +443,14 @@ if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); }
 let windowN = +(localStorage.getItem(LS.win) || 21);
 let activeBench = benchmark;   // tatsächlich verwendeter Benchmark (kann per Fallback abweichen)
 let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' | 'stoch' | 'peer'
+// Jeffs Excel zieht die Kurshistorie ueber STOCKHISTORY (endet beim letzten abgeschlossenen
+// Tag), waehrend die %-1D-Spalte aus dem Live-Datentyp kommt. Sein RS-Block hinkt dadurch
+// einen Handelstag hinterher. Mit diesem Versatz treffen wir sein Sheet exakt (58/58 geprueft).
+let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
 const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
 let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv';   // Ziel des Chart-Icons
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
+let groupFilter = localStorage.getItem('rs.grp') || null;     // null = alle Gruppen
 let sortMode = localStorage.getItem('rs.sort') || 'orig';
 
 /* ---------- Parsing ---------- */
@@ -518,18 +533,18 @@ function weightedThrust(rs){
 function thrColor(t){
   if(t==null) return {bg:'transparent',fg:'var(--faint)'};
   const d = (t-1)*100;                     // Abweichung von 100 % in Prozentpunkten
-  if(d>=3)  return {bg:'#14532d',fg:'#bbf7d0'};
-  if(d>=1)  return {bg:'#166534',fg:'#dcfce7'};
-  if(d>=0)  return {bg:'#1e3a2a',fg:'#a7f3d0'};
+  if(d>=3)  return {bg:'#0b4a6b',fg:'#bae6fd'};
+  if(d>=1)  return {bg:'#0d5f85',fg:'#e0f2fe'};
+  if(d>=0)  return {bg:'#12313f',fg:'#a5dfff'};
   if(d>=-2) return {bg:'#3a1f22',fg:'#fca5a5'};
   return {bg:'#7f1d1d',fg:'#fecaca'};
 }
 function stsColor(p){
   if(p==null) return {bg:'transparent',fg:'var(--faint)'};
   // green ramp like the sheet's conditional formatting
-  if(p>=0.85) return {bg:'#14532d',fg:'#bbf7d0'};
-  if(p>=0.65) return {bg:'#166534',fg:'#dcfce7'};
-  if(p>=0.45) return {bg:'#1e3a2a',fg:'#a7f3d0'};
+  if(p>=0.85) return {bg:'#0b4a6b',fg:'#bae6fd'};
+  if(p>=0.65) return {bg:'#0d5f85',fg:'#e0f2fe'};
+  if(p>=0.45) return {bg:'#12313f',fg:'#a5dfff'};
   if(p>=0.25) return {bg:'#1c2432',fg:'#94a3b8'};
   return {bg:'transparent',fg:'var(--faint)'};
 }
@@ -546,6 +561,13 @@ function buildBlocks(){
   if(cur.items.length||cur.label!==null) blocks.push(cur);
   return blocks;
 }
+// Nur die im Reiter gewaehlte Gruppe. Unbekannter Filter (z. B. Gruppe umbenannt) -> alles.
+function visibleBlocks(){
+  const all = buildBlocks();
+  if(!groupFilter) return all;
+  const sel = all.filter(b=>b.label===groupFilter);
+  return sel.length ? sel : all;
+}
 
 /* ---------- Übersicht ---------- */
 // Pro Gruppe ein Farbstreifen (Monatsstärke auf einen Blick) und darunter die beiden
@@ -553,7 +575,7 @@ function buildBlocks(){
 function renderDash(dataMap){
   const has = t => { const d=dataMap&&dataMap[t]; return d&&d.rs&&d.rs.length ? d : null; };
   let html = '';
-  buildBlocks().forEach(bl=>{
+  visibleBlocks().forEach(bl=>{
     const items = bl.items.filter(r=>has(r.ticker));
     if(!items.length) return;
     html += `<div class="dash-grp"><h4>${esc(bl.label||'Ohne Gruppe')} <span style="color:var(--faint)">· ${items.length}</span></h4>`;
@@ -605,7 +627,7 @@ function render(dataMap){
   html += `<div class="group-head">Benchmark</div>`;
   html += rowHTML({type:'tk', ticker:activeBench, name:'Referenz'}, null, true, b);
 
-  const blocks = buildBlocks();
+  const blocks = visibleBlocks();
 
   const val = (r)=>{
     const d = dataMap && dataMap[r.ticker];
@@ -873,7 +895,8 @@ function applyPct(dataMap){
   if(!dataMap) return;
   Object.values(dataMap).forEach(d=>{
     if(!d) return;
-    const full = d.rsFull || d.rs;           // d.rs: Altbestand aus dem frueheren Cache
+    let full = d.rsFull || d.rs;             // d.rs: Altbestand aus dem frueheren Cache
+    if(lagDays>0 && full && full.length>lagDays) full = full.slice(0, -lagDays);
     if(!full || full.length<3){ d.rs=null; d.pct=null; d.thrust=null; return; }
     const w = full.slice(-windowN);
     const base = w[0];
@@ -959,6 +982,7 @@ function openSheet(which){
     $('#benchSel').value = benchmark;
     $('#windowN').value = windowN;
     $('#pctSel').value = pctMode;
+    $('#lagSel').value = String(lagDays);
     $('#chartSel').value = chartSrc;
     $('#pctWinLbl').textContent = windowN;
   }
@@ -975,16 +999,35 @@ $('#btnSettings').onclick = ()=>openSheet('set');
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
 $('#tickerBg').onclick=closeSheets; $('#setBg').onclick=closeSheets;
 
-// Ansicht: Liste / Übersicht
-document.querySelectorAll('.chip[data-view]').forEach(c=>{
-  c.onclick = ()=>{
-    viewMode = c.dataset.view;
-    localStorage.setItem('rs.view', viewMode);
-    document.querySelectorAll('.chip[data-view]').forEach(x=>x.classList.toggle('active', x===c));
-    renderCached();
-    window.scrollTo(0,0);
-  };
-});
+// Reiterleiste: Übersicht + ein Reiter je Gruppe. Wird aus der Ticker-Liste aufgebaut,
+// damit eigene Gruppen automatisch einen Reiter bekommen.
+function buildTabs(){
+  const bar = $('#viewbar');
+  const labels = buildBlocks().map(b=>b.label).filter(Boolean);
+  // Kurzform fuer die Reiter, damit sie auf den Bildschirm passen
+  const short = l => l.replace(/^Equal-Weight /,'EW ').replace(/ Sektoren$/,'').replace(/ Groups$/,'');
+  bar.innerHTML =
+    `<button class="chip" data-tab="dash">Übersicht</button>` +
+    `<button class="chip" data-tab="*">Alle</button>` +
+    labels.map(l=>`<button class="chip" data-tab="g:${esc(l)}">${esc(short(l))}</button>`).join('');
+  bar.querySelectorAll('.chip').forEach(c=>{
+    c.onclick = ()=>{
+      const t = c.dataset.tab;
+      viewMode = t==='dash' ? 'dash' : 'list';
+      groupFilter = t.startsWith('g:') ? t.slice(2) : null;
+      localStorage.setItem('rs.view', viewMode);
+      localStorage.setItem('rs.grp', groupFilter||'');
+      markTabs();
+      renderCached();
+      window.scrollTo(0,0);
+    };
+  });
+  markTabs();
+}
+function markTabs(){
+  const active = viewMode==='dash' ? 'dash' : (groupFilter ? 'g:'+groupFilter : '*');
+  document.querySelectorAll('#viewbar .chip').forEach(x=>x.classList.toggle('active', x.dataset.tab===active));
+}
 
 // Sortier-Chips
 document.querySelectorAll('.chip[data-sort]').forEach(c=>{
@@ -999,7 +1042,7 @@ document.querySelectorAll('.chip[data-sort]').forEach(c=>{
 $('#saveTickers').onclick = ()=>{
   const txt = $('#tickerText').value;
   localStorage.setItem(LS.tickers, txt);
-  loadTickers(); closeSheets();
+  loadTickers(); buildTabs(); closeSheets();
   renderCached();
   toast('Ticker gespeichert'); 
   setTimeout(refresh, 250);
@@ -1018,6 +1061,7 @@ $('#saveSettings').onclick = ()=>{
   windowN = Math.max(10,Math.min(60,+$('#windowN').value||21)); localStorage.setItem(LS.win, windowN);
   pctMode = $('#pctSel').value; localStorage.setItem('rs.pctmode', pctMode);
   chartSrc = $('#chartSel').value; localStorage.setItem('rs.chartsrc', chartSrc);
+  lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
   activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
   closeSheets();
@@ -1066,7 +1110,7 @@ $('#testConn').onclick = async ()=>{
 loadTickers();
 $('#benchLabel').textContent = benchmark;
 document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x.dataset.sort===sortMode));
-document.querySelectorAll('.chip[data-view]').forEach(x=>x.classList.toggle('active', x.dataset.view===viewMode));
+buildTabs();
 renderCached();
 if('serviceWorker' in navigator){/* offline shell optional */}
 </script>
