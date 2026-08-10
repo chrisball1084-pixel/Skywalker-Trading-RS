@@ -74,9 +74,14 @@
     background:linear-gradient(180deg,var(--bg),rgba(10,14,20,.6));z-index:5;
   }
   .row{
-    display:grid;grid-template-columns:96px 1fr 58px 30px;align-items:center;gap:8px;
-    padding:8px 12px;border-bottom:1px solid var(--line);position:relative;
+    display:grid;grid-template-columns:84px minmax(0,1fr) 46px 46px 28px;align-items:center;gap:6px;
+    padding:8px 10px;border-bottom:1px solid var(--line);position:relative;
   }
+  .colhead{
+    display:grid;grid-template-columns:84px minmax(0,1fr) 46px 46px 28px;gap:6px;padding:0 10px 5px;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  }
+  .colhead span:nth-child(3),.colhead span:nth-child(4){text-align:center}
   .row.bench-row{background:var(--panel2)}
   .tk{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.01em;min-width:0}
   .tk .nm{display:block;font-family:var(--sans);font-weight:400;font-size:11px;color:var(--dim);letter-spacing:0;
@@ -85,7 +90,8 @@
   .tk .meta .lab{color:var(--faint);font-weight:600;font-size:9px}
   .spark{height:34px;width:100%;display:block}
   .spark.empty{opacity:.25}
-  .sts{font-family:var(--mono);font-size:14px;font-weight:700;text-align:center;padding:5px 4px;border-radius:7px}
+  .sts{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;padding:5px 2px;border-radius:7px}
+  .thr{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;padding:5px 2px;border-radius:7px}
   .chg{font-family:var(--mono);font-size:11px;text-align:right;color:var(--dim);display:block}
   .chg.pos{color:var(--up)} .chg.neg{color:var(--down)}
   .tvbtn{width:100%;height:26px;display:flex;align-items:center;justify-content:center;
@@ -156,7 +162,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.10-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.10-2</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -237,10 +243,15 @@
     <label class="field">
       <span class="lab">RS %-Spalte (Berechnung)</span>
       <select class="inp" id="pctSel">
-        <option value="time">Zeit-Perzentil — Jeffs Formel</option>
+        <option value="time">Zeit-Perzentil (PERCENTRANK)</option>
+        <option value="stoch">Stochastik (Position zwischen Tief und Hoch)</option>
         <option value="peer">Peer-Rang innerhalb der Gruppe</option>
       </select>
-      <span class="hint"><b>Zeit-Perzentil</b> = wo die heutige RS innerhalb der eigenen letzten <span id="pctWinLbl">21</span> Tage steht. Das ist Jeffs Excel-Formel <span style="color:var(--accent)">=PERCENTRANK(AF3:BD3,BD3)</span>.<br><b>Peer-Rang</b> = Rang gegen die anderen Ticker derselben Gruppe. Interessant als Zweitmeinung, entspricht aber nicht dem Sheet.</span>
+      <span class="hint">Alle drei messen, wo die heutige RS innerhalb der letzten <span id="pctWinLbl">21</span> Tage steht — nur unterschiedlich.<br>
+      <b>Zeit-Perzentil</b>: wie viele der Tage darunter liegen (Jeffs Formel von 2024).<br>
+      <b>Stochastik</b>: Position zwischen Fenster-Tief und -Hoch. Trifft sein aktuelles Sheet in meinen Tests etwas besser.<br>
+      <b>Peer-Rang</b>: Rang gegen die anderen Ticker derselben Gruppe.<br>
+      Wechseln kostet kein Neuladen — die Werte werden sofort neu berechnet.</span>
     </label>
     <button class="btn-primary" id="saveSettings">Speichern</button>
     <button class="btn-ghost" id="testConn">Verbindung testen</button>
@@ -375,12 +386,20 @@ if(!localStorage.getItem('rs.mig.rsp')){
   localStorage.removeItem('rs.loaded');
   localStorage.setItem('rs.mig.rsp','1');
 }
+// Der Cache speichert jetzt die volle Historie statt nur des Fensters. Einmal neu laden,
+// danach ist jede Fensteraenderung eine reine Neuberechnung ohne API-Abrufe.
+if(!localStorage.getItem('rs.mig.hist')){
+  localStorage.removeItem(LS.cache);
+  localStorage.removeItem('rs.loaded');
+  localStorage.setItem('rs.mig.hist','1');
+}
 
 let benchmark = localStorage.getItem(LS.bench) || 'RSP';
 if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); } // migrate broken symbol
 let windowN = +(localStorage.getItem(LS.win) || 21);
 let activeBench = benchmark;   // tatsächlich verwendeter Benchmark (kann per Fallback abweichen)
-let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' = Jeffs PERCENTRANK, 'peer' = Rang in der Gruppe
+let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' | 'stoch' | 'peer'
+const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
 let sortMode = localStorage.getItem('rs.sort') || 'orig';
 
 /* ---------- Parsing ---------- */
@@ -459,6 +478,16 @@ function weightedThrust(rs){
   const wAvg = acc / wsum;                          // gewichtete mittlere Tagesänderung
   return 1 + wAvg * 5;                              // auf Woche hochrechnen, um 100% zentriert
 }
+// Thrust liegt eng um 100 % herum, deshalb eine feinere Skala als bei der RS-Spalte.
+function thrColor(t){
+  if(t==null) return {bg:'transparent',fg:'var(--faint)'};
+  const d = (t-1)*100;                     // Abweichung von 100 % in Prozentpunkten
+  if(d>=3)  return {bg:'#14532d',fg:'#bbf7d0'};
+  if(d>=1)  return {bg:'#166534',fg:'#dcfce7'};
+  if(d>=0)  return {bg:'#1e3a2a',fg:'#a7f3d0'};
+  if(d>=-2) return {bg:'#3a1f22',fg:'#fca5a5'};
+  return {bg:'#7f1d1d',fg:'#fecaca'};
+}
 function stsColor(p){
   if(p==null) return {bg:'transparent',fg:'var(--faint)'};
   // green ramp like the sheet's conditional formatting
@@ -500,8 +529,9 @@ function render(dataMap){
     if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
     return 0;
   };
+  const colHead = `<div class="colhead"><span></span><span></span><span>Thrust</span><span>RS ${windowN}T</span><span></span></div>`;
   blocks.forEach(bl=>{
-    if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>`;
+    if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>` + colHead;
     let items = bl.items;
     if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
     items.forEach(r=>{
@@ -512,11 +542,12 @@ function render(dataMap){
   main.innerHTML = html;
 }
 function rowHTML(r, d, isBench, benchData){
-  let spark='', sts='', chg='', chgCls='', barCol='transparent', metaLine='';
+  let spark='', sts='', thrCell='', chg='', chgCls='', barCol='transparent', metaLine='';
   const emptySpark = `<svg class="spark empty" viewBox="0 0 100 32"><line x1="0" y1="16" x2="100" y2="16" stroke="var(--line)" stroke-width="0.6"/></svg>`;
   if(isBench){
     spark = emptySpark;
     sts = `<span class="sts" style="color:var(--faint)">—</span>`;
+    thrCell = `<span class="thr" style="color:var(--faint)">—</span>`;
     if(benchData && benchData.lastClose!=null){ chg = fmtChg(benchData.dayChg); chgCls = benchData.dayChg>=0?'pos':'neg'; }
     metaLine = `<span class="meta"><span class="lab">Referenz</span></span>`;
   } else if(d && d.rs && d.rs.length){
@@ -526,12 +557,13 @@ function rowHTML(r, d, isBench, benchData){
     sts = `<span class="sts" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
     if(p!=null){ barCol = p>=0.65?'var(--up)':(p<0.3?'var(--down)':'var(--faint)'); }
     if(d.dayChg!=null){ chg = fmtChg(d.dayChg); chgCls = d.dayChg>=0?'pos':'neg'; }
-    const thr = d.thrust!=null ? Math.round(d.thrust*100)+'%' : '–';
-    const thrCol = d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)');
-    metaLine = `<span class="meta"><span class="lab">THR</span><span style="color:${thrCol}">${thr}</span></span>`;
+    const t = thrColor(d.thrust);
+    thrCell = `<span class="thr" style="background:${t.bg};color:${t.fg}">${d.thrust==null?'—':Math.round(d.thrust*100)+'%'}</span>`;
+    metaLine = '';
   } else {
     spark = emptySpark;
     sts = `<span class="sts" style="color:var(--faint)">·</span>`;
+    thrCell = `<span class="thr" style="color:var(--faint)">·</span>`;
     metaLine = `<span class="meta"><span class="lab" style="color:var(--faint)">—</span></span>`;
   }
   const tvIcon = isBench ? '<span class="tvbtn-ph"></span>' : `<button class="tvbtn" onclick="openTV('${esc(r.ticker)}',event)" aria-label="TradingView">
@@ -539,10 +571,11 @@ function rowHTML(r, d, isBench, benchData){
   const nm = `<span class="nm">${esc(r.name||'')}</span>`;
   return `<div class="row${isBench?' bench-row':''}">
     <span class="rank-badge" style="background:${barCol}"></span>
-    <span class="tk">${esc(r.ticker)}${nm}${metaLine}</span>
+    <span class="tk">${esc(r.ticker)}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
     ${spark}
+    ${thrCell}
     ${sts}
-    <span class="col4"><span class="chg ${chgCls}">${chg}</span>${tvIcon}</span>
+    <span class="col4">${tvIcon}</span>
   </div>`;
 }
 function fmtChg(v){ if(v==null||isNaN(v)) return ''; const s=v>=0?'+':''; return s+v.toFixed(1)+'%'; }
@@ -615,7 +648,10 @@ async function fetchSeries(symbol, key, outputsize){
 async function refresh(opts={}){
   const key = localStorage.getItem(LS.key);
   if(!key){ openSheet('set'); return; }
-  const need = windowN + 3;
+  // Immer die volle Historie holen, nicht nur das aktuelle Fenster.
+  // Twelve Data rechnet Credits pro Anfrage, nicht pro Zeile — mehr Daten kosten also nichts
+  // extra, machen aber jede Fensteränderung zu einer reinen Neuberechnung ohne Neuladen.
+  const need = HISTORY;
   const forceAll = opts.force===true;
 
   const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
@@ -669,20 +705,19 @@ async function refresh(opts={}){
   let done=0, failed=[], limitHit=false;
   const RATE_MS = 8100;
   const totalTodo = todo.length;
+  const wl = await acquireWakeLock();   // iOS pausiert Timer, sobald der Bildschirm ausgeht
   for(const sym of todo){
     showStatus('live', `Lade ${sym} …`, `${done}/${totalTodo}${forceAll?'':' (fehlende)'}`);
     try{
       const s = await fetchSeries(sym, key, need);
       if(s && s.length>=3){
-        const aligned = s.filter(v=>benchMap[v.d]!=null).slice(-windowN);
+        const aligned = s.filter(v=>benchMap[v.d]!=null).slice(-HISTORY);
         if(aligned.length>=3){
-          const rsRaw = aligned.map(v=> v.c / benchMap[v.d]);
-          const base = rsRaw[0];
-          const rs = rsRaw.map(x=> x/base);
-          const timePct = percentRank(rs, rs.at(-1));
-          const thrust = weightedThrust(rs);
+          // Rohe RS-Verhaeltnisse speichern. Normierung und Kennzahlen entstehen erst
+          // beim Rendern, damit ein anderes Fenster kein Neuladen braucht.
+          const rsFull = aligned.map(v=> v.c / benchMap[v.d]);
           const last=s.at(-1).c, prev=s.at(-2)?.c;
-          dataMap[sym] = {rs, timePct, pct:timePct, thrust, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+          dataMap[sym] = {rsFull, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
           loadedToday[sym] = true;
         }
       }
@@ -701,6 +736,7 @@ async function refresh(opts={}){
     saveLoadedToday(todayKey, loadedToday);
     if(done<totalTodo) await sleep(RATE_MS);
   }
+  releaseWakeLock(wl);
   applyPct(dataMap);
   render(dataMap); saveCache(dataMap);
   const when = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
@@ -739,12 +775,30 @@ function computePeerRanks(dataMap){
   });
 }
 
+// Stochastik-Position im Fenster: 0 % = auf dem Tief, 100 % = auf dem Hoch.
+function stochPos(w){
+  let mn=w[0], mx=w[0];
+  for(const v of w){ if(v<mn) mn=v; if(v>mx) mx=v; }
+  return mx===mn ? 0 : (w.at(-1)-mn)/(mx-mn);
+}
+
+// Schneidet aus der gespeicherten Historie das eingestellte Fenster und leitet alle
+// Anzeigewerte daraus ab. Laeuft bei jedem Rendern — Fensterwechsel kostet kein Neuladen.
 function applyPct(dataMap){
   if(!dataMap) return;
-  if(pctMode==='peer'){ computePeerRanks(dataMap); return; }
   Object.values(dataMap).forEach(d=>{
-    if(d && d.rs && d.rs.length) d.pct = (d.timePct!=null ? d.timePct : null);
+    if(!d) return;
+    const full = d.rsFull || d.rs;           // d.rs: Altbestand aus dem frueheren Cache
+    if(!full || full.length<3){ d.rs=null; d.pct=null; d.thrust=null; return; }
+    const w = full.slice(-windowN);
+    const base = w[0];
+    d.rs = w.map(x=> x/base);                // auf Fensterstart normiert, fuer das Histogramm
+    d.timePct = percentRank(d.rs, d.rs.at(-1));
+    d.stochPct = stochPos(d.rs);
+    d.thrust = weightedThrust(d.rs);
+    d.pct = pctMode==='stoch' ? d.stochPct : d.timePct;
   });
+  if(pctMode==='peer') computePeerRanks(dataMap);
 }
 
 // „heute geladen"-Tracking pro Tag
@@ -759,6 +813,33 @@ function saveLoadedToday(dayKey, map){
 function saveCache(map){ try{ localStorage.setItem(LS.cache, JSON.stringify({t:Date.now(),map})); }catch(e){} }
 function loadCache(){ try{ const c=JSON.parse(localStorage.getItem(LS.cache)); return c?c.map:null; }catch(e){ return null; } }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ---------- Laden ueber lange Strecken am Leben halten ---------- */
+// iOS drosselt bzw. stoppt Timer, sobald die Seite in den Hintergrund geht oder der
+// Bildschirm sperrt. Bei ~13 Minuten Ladezeit reisst der Lauf dadurch zuverlaessig ab.
+let running = false;
+async function acquireWakeLock(){
+  running = true;
+  try{ return await navigator.wakeLock?.request('screen') ?? null; }
+  catch(e){ return null; }
+}
+function releaseWakeLock(wl){
+  running = false;
+  try{ wl?.release(); }catch(e){}
+}
+// Nach der Rueckkehr in den Vordergrund automatisch weitermachen. Der Tages-Cache sorgt
+// dafuer, dass nur die noch fehlenden Ticker geholt werden.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden || running) return;
+  if(!localStorage.getItem(LS.key)) return;
+  const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
+  const cache = loadCache() || {};
+  const missing = syms.filter(s=> s!==activeBench && !(cache[s] && (cache[s].rsFull||cache[s].rs)));
+  if(missing.length){
+    toast(`Fortsetzen: ${missing.length} Ticker fehlen noch`);
+    setTimeout(refresh, 400);
+  }
+});
 
 // Aus Cache rendern und dabei Peer-Ranks frisch berechnen (konsistente 1M-Anzeige)
 function renderCached(){
@@ -839,13 +920,15 @@ $('#saveSettings').onclick = ()=>{
   $('#benchLabel').textContent = benchmark;
   closeSheets();
 
-  // Benchmark oder Fenster geändert -> alle RS-Reihen sind ungültig, Tages-Cache verwerfen.
-  const stale = (benchmark!==prevBench) || (windowN!==prevWin);
-  if(stale){ localStorage.removeItem(LS.cache); localStorage.removeItem('rs.loaded'); }
+  // Nur ein Benchmark-Wechsel macht die gespeicherten Reihen ungültig. Fenster und Maß
+  // werden aus der vorhandenen Historie neu berechnet — kein Neuladen nötig.
+  const benchChanged = benchmark!==prevBench;
+  if(benchChanged){ localStorage.removeItem(LS.cache); localStorage.removeItem('rs.loaded'); }
 
   if(!k){ render(null); return; }
-  if(stale){ toast('Benchmark/Fenster geändert – lade alles neu …'); setTimeout(()=>refresh({force:true}),250); }
-  else { toast('Gespeichert'); renderCached(); setTimeout(refresh,250); }
+  if(benchChanged){ toast('Benchmark geändert – lade alles neu …'); setTimeout(()=>refresh({force:true}),250); return; }
+  renderCached();
+  toast(windowN!==prevWin ? `Fenster: ${windowN} Tage – neu berechnet` : 'Gespeichert');
 };
 
 $('#forceReload').onclick = ()=>{
