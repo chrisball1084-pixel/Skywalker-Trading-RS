@@ -66,6 +66,11 @@
   .status .dot.live{background:var(--up);box-shadow:0 0 8px var(--up)}
   .status .dot.err{background:var(--down)}
   .status .dot.warn{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  .status{flex-wrap:wrap;row-gap:5px}
+  .status > span:first-child{min-width:0;flex:1 1 auto}
+  .status #statusMeta{margin-left:auto}
+  .group-head.tappable{cursor:pointer;display:flex;align-items:center;gap:6px}
+  .group-head .gcount{margin-left:auto;color:var(--faint);font-size:9px}
   .status.hidden{display:none}
   .status #statusText{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .status #statusMeta{display:flex;align-items:center;gap:7px;flex:none}
@@ -201,7 +206,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-3</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-4</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -222,9 +227,9 @@
   <div class="sortbar" id="sortbar">
     <span class="sortlbl">Zeitraum</span>
     <button class="chip active" data-sort="orig">Liste</button>
-    <button class="chip" data-sort="dayrs">Tag</button>
-    <button class="chip" data-sort="thrust">Woche</button>
     <button class="chip" data-sort="pct">Monat</button>
+    <button class="chip" data-sort="thrust">Woche</button>
+    <button class="chip" data-sort="dayrs">Tag</button>
     <button class="chip" data-sort="chg">Kurs Tag</button>
   </div>
 </header>
@@ -328,7 +333,7 @@
     <label class="field">
       <span class="lab">Chart-Ziel (Symbol rechts in der Zeile)</span>
       <select class="inp" id="chartSel">
-        <option value="tv">TradingView — mit Börsenkürzel (AMEX:/NASDAQ:)</option>
+        <option value="tv">TradingView — mit Börsenkürzel (empfohlen)</option>
         <option value="tvpl">TradingView — nur Ticker, ohne Börse</option>
         <option value="fv">Finviz</option>
         <option value="sc">StockCharts</option>
@@ -546,12 +551,12 @@ BABA, Alibaba`;
    editierbar; Gewichtungen verschieben sich, die Liste will gelegentlich nachgezogen
    werden. Kostet keine API-Abrufe, es sind reine Chart-Links. */
 const DEFAULT_HOLDINGS = `GDX: NEM, AEM, GOLD, WPM, FNV, AU, KGC, GFI, RGLD, HMY
-GDXJ: PAAS, HMY, AGI, EQX, BTG, IAG, NGD, OR, DPM, EDV
-SIL: WPM, PAAS, FNV, HL, CDE, SSRM, FSM, MAG, EDR, SVM
-SILJ: CDE, HL, FSM, MAG, GATO, SVM, EDR, ASM, AYA, DSV
-COPX: FCX, SCCO, TECK, LUN, HBM, ERO, ANTO, IVN, CS, KGH
-XME: AA, X, CLF, NUE, STLD, FCX, RS, ATI, CRS, MP
-SLX: VALE, RIO, NUE, STLD, X, CLF, TX, GGB, MT, SID
+GDXJ: PAAS, HMY, AGI, EQX, BTG, IAG, OR, EDV
+SIL: WPM, PAAS, FNV, HL, CDE, SSRM, FSM, SVM
+SILJ: CDE, HL, FSM, SVM, ASM, AYA, DSV
+COPX: FCX, SCCO, TECK, LUN, HBM, ERO, IVN, KGH
+XME: AA, CLF, NUE, STLD, FCX, RS, ATI, CRS, MP
+SLX: VALE, RIO, NUE, STLD, CLF, TX, GGB, MT, SID
 URA: CCJ, NXE, OKLO, UEC, DNN, LEU, PDN, EU, URG, LTBR
 URNM: CCJ, KAP, NXE, UEC, DNN, PDN, EU, LEU, URG, BOE
 NLR: CEG, VST, BWXT, CCJ, PEG, D, DUK, SO, EXC, LEU
@@ -560,27 +565,83 @@ XAR: AVAV, RKLB, KTOS, AXON, HII, TXT, LDOS, BA, LMT, NOC
 SHLD: PLTR, RTX, GE, BA, LMT, NOC, TDG, HWM, LDOS, GD
 JETS: DAL, UAL, LUV, AAL, ALK, SKYW, ALGT, JBLU, RYAAY, CPA
 IGV: MSFT, ORCL, CRM, ADBE, NOW, INTU, PLTR, PANW, CRWD, SNOW
-BUG: CRWD, PANW, ZS, FTNT, CYBR, OKTA, QLYS, TENB, S, RPD
+BUG: CRWD, PANW, ZS, FTNT, OKTA, QLYS, TENB, S, RPD
 CIBR: CRWD, PANW, CSCO, FTNT, ZS, CHKP, OKTA, VRNS, BAH, LDOS
 FDN: AMZN, META, GOOGL, NFLX, CRM, UBER, BKNG, ABNB, SHOP, PYPL
 XSD: NVDA, AMD, MU, AVGO, TXN, ADI, MRVL, ON, MCHP, INTC
 IHI: ABT, ISRG, SYK, BSX, MDT, EW, DXCM, BDX, ZBH, PODD
 PAVE: NUE, PWR, ETN, URI, EMR, VMC, MLM, JCI, TT, FAST
-GRID: ETN, ABB, PWR, HUBB, GEV, VRT, NVT, ATKR, AMRC, BE
-ITB: DHI, LEN, NVR, PHM, TOL, HD, LOW, BLDR, MAS, TPH
-IYZ: T, VZ, TMUS, CMCSA, CHTR, FYBR, LUMN, IRDM, GSAT, ATEX
-WOOD: WY, PCH, RYN, LPX, IP, WFG, BCC, UFPI, SUZ, SW
+GRID: ETN, PWR, HUBB, GEV, VRT, NVT, ATKR, AMRC, BE
+ITB: DHI, LEN, NVR, PHM, TOL, HD, LOW, BLDR, MAS
+IYZ: T, VZ, TMUS, CMCSA, CHTR, LUMN, IRDM, GSAT, ATEX
+WOOD: WY, RYN, LPX, IP, WFG, BCC, UFPI, SUZ, SW
 KCE: GS, MS, SCHW, BLK, KKR, APO, BX, ARES, IBKR, TROW
-IPAY: V, MA, PYPL, FI, FIS, GPN, AXP, TOST, NU, DLO
+IPAY: V, MA, PYPL, FIS, GPN, AXP, TOST, NU, DLO
 KWEB: BABA, PDD, JD, NTES, BIDU, TCOM, XPEV, LI, BILI, MNSO
-OIH: SLB, HAL, BKR, TS, FTI, NOV, CHX, WFRD, RIG, VAL
+OIH: SLB, HAL, BKR, TS, FTI, NOV, WFRD, RIG, VAL
 PHO: ECL, AWK, XYL, VLTO, PNR, IEX, WTS, AOS, MWA, ROP
 ESPO: NVDA, SE, NTES, EA, RBLX, TTWO, BILI, U, PLTK, GRVY
-UFO: IRDM, RKLB, GRMN, VSAT, GSAT, PL, SPIR, ASTS, TMUS, MAXR
+UFO: IRDM, RKLB, GRMN, VSAT, GSAT, PL, SPIR, ASTS, TMUS
 QTUM: IONQ, RGTI, QBTS, HON, IBM, GOOGL, MSFT, NVDA, ALAB, MRVL
-BOTZ: NVDA, ISRG, ABB, FANUY, KEYS, SYM, PATH, TER, ZBRA, OMCL
+BOTZ: NVDA, ISRG, FANUY, KEYS, SYM, PATH, TER, ZBRA, OMCL
 IBUY: AMZN, SHOP, BKNG, ABNB, DASH, EBAY, ETSY, CHWY, W, CVNA
-LIT: ALB, TSLA, SQM, PCRFY, BYDDY, ALTM, EVE, GNENY, LAC, PLL`;
+LIT: ALB, TSLA, SQM, BYDDY, GNENY, LAC
+CLOU: TWLO, ZS, DOCN, BOX, DBX, SHOP, PCTY, NTNX, FIVN, ZM
+WCLD: NOW, CRM, SNOW, DDOG, MDB, TEAM, HUBS, VEEV, TWLO, ZS
+XOP: APA, DVN, FANG, EOG, OXY, MTDR, MUR, CRC, SM
+XES: SLB, HAL, BKR, NOV, FTI, WFRD, LBRT, PTEN, HP
+AMLP: EPD, ET, PAA, MPLX, WES, HESM, GEL, SUN, DTM
+FCG: EQT, EXE, AR, RRC, GPOR, CNX, CRK, MTDR, DVN
+TAN: FSLR, ENPH, NXT, ARRY, SEDG, RUN, DQ, SHLS, JKS
+ICLN: FSLR, NEE, ENPH, ORA, PLUG, BEP, BEPC, RUN, NXT, CWEN
+PBW: FSLR, ENPH, PLUG, RUN, BE, NXT, SHLS, ARRY, BLDP, WOLF
+HYDR: PLUG, BE, BLDP, LIN, FCEL, CMI, AP, GEVO
+SMH: NVDA, TSM, AVGO, AMD, ASML, TXN, QCOM, AMAT, MU, LRCX
+SOXX: NVDA, AVGO, AMD, TXN, QCOM, MU, ADI, AMAT, LRCX, KLAC
+DRAM: MU, WDC, STX, SNDK, SIMO, RMBS, NVDA, MRVL, ADI, INTC
+AIQ: NVDA, META, GOOGL, MSFT, AMZN, AVGO, ORCL, PLTR, CRM, IBM
+MAGS: NVDA, MSFT, AAPL, AMZN, GOOGL, META, TSLA
+ARKK: TSLA, COIN, ROKU, RBLX, PLTR, HOOD, CRSP, TEM, RKLB, PATH
+ARKW: TSLA, COIN, HOOD, ROKU, PLTR, RBLX, SHOP, TWLO, META, TOST
+ARKF: COIN, SHOP, HOOD, TOST, PLTR, DLO, ADYEY, NU, RBLX
+ARKG: TEM, CRSP, TWST, RXRX, VCYT, BEAM, NTLA, ARCT, PACB, CDNA
+ARKX: KTOS, RKLB, TDY, IRDM, AVAV, TXT, TER, GRMN, HON
+NASA: RKLB, ASTS, LUNR, RDW, PL, AVAV, KTOS, HEI, IRDM, GRMN
+IDGT: NVDA, AVGO, EQIX, DLR, ANET, AMD, CSCO, MSI, KEYS, VRT
+SOCL: META, GOOGL, TCEHY, SE, PINS, SNAP, RDDT, SPOT, BIDU, Z
+BUZZ: NVDA, TSLA, PLTR, AMD, META, AAPL, COIN, HOOD, MSTR, SOFI
+IAI: GS, MS, SCHW, SPGI, ICE, CME, BLK, MCO, NDAQ, IBKR
+BLOK: COIN, MSTR, HOOD, MARA, RIOT, CLSK, GLXY, PYPL, IREN
+WGMI: MARA, RIOT, CLSK, CIFR, HUT, IREN, WULF, CORZ, HIVE
+MEME: PLTR, GME, AMC, HOOD, SOFI, RIVN, LCID, DJT, MSTR, RKLB
+PBE: AMGN, GILD, VRTX, REGN, INCY, NBIX, EXEL, HALO, ALKS, IONS
+PPH: LLY, JNJ, NVO, ABBV, AZN, NVS, MRK, PFE, GSK, BMY
+XHS: UNH, HCA, MCK, CI, ELV, CVS, COR, CAH, DVA, THC
+IHF: UNH, ELV, CI, CVS, HUM, MOH, CNC, HCA, MCK, COR
+CNBS: TCNNF, GTBIF, CURLF, CRLBF, IIPR, SNDL, TLRY, CGC, ACB
+IGF: AMT, UNP, NGG, SO, DUK, ENB, TRP, CP, CNI, AEP
+IYT: UBER, UNP, UPS, FDX, CSX, NSC, ODFL, DAL, EXPD, JBHT
+XTN: UBER, ALK, DAL, UAL, LUV, CHRW, EXPD, JBHT, XPO, SAIA
+BOAT: MATX, KEX, SBLK, GOGL, ZIM, DAC, GSL, EGLE, GNK, SB
+DRIV: TSLA, NVDA, GOOGL, TM, QCOM, HON, INTC, GM, F, MBLY
+FDRV: TSLA, RIVN, LCID, NVDA, ALB, APTV, MBLY, CHPT, BLNK, WBX
+PBJ: MDLZ, KO, PEP, MNST, KDP, GIS, HSY, SYY, CAG
+EATZ: MCD, SBUX, CMG, YUM, DRI, QSR, DPZ, TXRH, WEN, CAKE
+PEJ: BKNG, MAR, HLT, RCL, CCL, NCLH, ABNB, LVS, DKNG, EXPE
+GENZ: LVS, MGM, WYNN, DKNG, FLUT, CZR, MLCO, PENN, BYD, RSI
+BETZ: FLUT, DKNG, PENN, CZR, RSI, MGM, CHDN, GAMB, SGHC
+XHB: BLDR, DHI, LEN, NVR, PHM, TOL, MAS, MHK, WSM
+SCHH: PLD, AMT, EQIX, WELL, SPG, PSA, O, DLR, CCI, EXR
+XTL: TMUS, T, VZ, CIEN, LITE, CSCO, IRDM, ATEX
+FXI: BABA, PDD, JD, BIDU, NTES, TCOM, LI, XPEV, NIO, BEKE
+GXC: BABA, PDD, JD, NTES, BIDU, TCOM, LI, XPEV, BILI, TME
+CHIQ: BABA, PDD, JD, TCOM, YUMC, LI, XPEV, NIO, BILI, TME
+EWZ: VALE, ITUB, PBR, BBD, ABEV, BSBR, CIG, SBS, GGB
+ARGT: MELI, YPF, GGAL, BMA, PAM, SUPV, EDN, CRESY, TGS, LOMA
+ILF: VALE, ITUB, PBR, FMX, AMX, BBD, ABEV, BSAC, SQM, CIB
+GNR: XOM, CVX, LIN, BHP, RIO, SHEL, TTE, NEM, AEM, COP
+GUNR: XOM, CVX, SHEL, TTE, BHP, RIO, LIN, COP, NEM, VALE
+MOO: ZTS, DE, CTVA, NTR, IDXX, MOS, TSN, ADM, CF, BG`;
 
 /* ---------- State ---------- */
 let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, name}]
@@ -612,10 +673,17 @@ let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' | 'stoch
 // einen Handelstag hinterher. Mit diesem Versatz treffen wir sein Sheet exakt (58/58 geprueft).
 let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
 const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
-let chartSrc = localStorage.getItem('rs.chartsrc') || 'tvpl'; // Ziel des Chart-Icons
+let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv'; // Ziel des Chart-Icons
 let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
-let groupFilter = localStorage.getItem('rs.grp') || null;     // null = alle Gruppen
+let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
+// Zugeklappte Gruppen-Ueberschriften
+let collapsed = new Set((localStorage.getItem('rs.collapsed')||'').split('|').filter(Boolean));
+function toggleGroup(label){
+  if(collapsed.has(label)) collapsed.delete(label); else collapsed.add(label);
+  localStorage.setItem('rs.collapsed', [...collapsed].join('|'));
+  renderCached();
+}
 let sortMode = localStorage.getItem('rs.sort') || 'orig';
 
 /* ---------- Parsing ---------- */
@@ -757,12 +825,24 @@ function buildBlocks(){
   if(cur.items.length||cur.label!==null) blocks.push(cur);
   return blocks;
 }
-// Nur die im Reiter gewaehlte Gruppe. Unbekannter Filter (z. B. Gruppe umbenannt) -> alles.
+// Zuordnung der Bloecke zu den vier Reitern
+const GLOBAL_BLOCKS = ['Index','Segment','Equal-Weight Sektoren','SPDR Sektoren'];
+const STOCK_BLOCKS  = ['Stocks','Aktien'];
+function blockTab(label){
+  if(GLOBAL_BLOCKS.includes(label)) return 'global';
+  if(STOCK_BLOCKS.includes(label))  return 'stocks';
+  return 'groups';
+}
 function visibleBlocks(){
-  const all = buildBlocks();
-  if(!groupFilter) return all;
-  const sel = all.filter(b=>b.label===groupFilter);
-  return sel.length ? sel : all;
+  const all = buildBlocks().filter(b=> blockTab(b.label)===tabMode || tabMode==='dash');
+  // Im Reiter "Gruppen" bei gewaehltem Zeitraum: eine einzige Rangliste ueber alle
+  // Industriegruppen hinweg, statt nach Thema getrennt. Bei "Liste" bleibt die Gliederung.
+  if(tabMode==='groups' && sortMode!=='orig' && viewMode==='list'){
+    const items = all.flatMap(b=>b.items);
+    const name = {dayrs:'Tag', thrust:'Woche', pct:'Monat', chg:'Kurs Tag'}[sortMode] || '';
+    return [{label:`Industriegruppen · nach ${name}`, items}];
+  }
+  return all;
 }
 
 /* ---------- Übersicht ---------- */
@@ -793,11 +873,11 @@ function renderDash(dataMap){
 
     // Die drei Zeitebenen: Tag = RS-Rotation von gestern, Woche = Thrust, Monat = RS %
     const ebenen = [
+      {t:'Monat',key:'pct',    txt:d=>d.pct==null?'—':Math.round(d.pct*100)+'%', col:d=>d.pct==null?'var(--faint)':(d.pct>=.65?'var(--up)':(d.pct<.3?'var(--down)':'var(--dim)'))},
+      {t:'Woche',key:'thrust', txt:d=>d.thrust==null?'—':Math.round(d.thrust*100)+'%', col:d=>d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)')},
       sigmaDay
         ? {t:'Tag', key:'daySigma', txt:d=>d.daySigma==null?'—':(d.daySigma>=0?'+':'')+d.daySigma.toFixed(1)+'σ', col:d=>posCol(d.daySigma)}
-        : {t:'Tag', key:'dayRS',    txt:d=>d.dayRS==null?'—':sign(d.dayRS),      col:d=>posCol(d.dayRS)},
-      {t:'Woche',key:'thrust', txt:d=>d.thrust==null?'—':Math.round(d.thrust*100)+'%', col:d=>d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)')},
-      {t:'Monat',key:'pct',    txt:d=>d.pct==null?'—':Math.round(d.pct*100)+'%', col:d=>d.pct==null?'var(--faint)':(d.pct>=.65?'var(--up)':(d.pct<.3?'var(--down)':'var(--dim)'))}
+        : {t:'Tag', key:'dayRS',    txt:d=>d.dayRS==null?'—':sign(d.dayRS),      col:d=>posCol(d.dayRS)}
     ];
     const n = Math.min(3, Math.floor(items.length/2)) || 1;
     html += '<div class="dash-cols">' + ebenen.map(e=>{
@@ -848,7 +928,14 @@ function render(dataMap){
     + `<span class="${sortMode==='thrust'?'hi':''}">Woche</span>`
     + `<span class="${sortMode==='pct'?'hi':''}">Monat ${windowN}T</span><span></span></div>`;
   blocks.forEach(bl=>{
-    if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>` + colHead;
+    const zu = bl.label && collapsed.has(bl.label);
+    if(bl.label){
+      html += `<div class="group-head tappable" onclick="toggleGroup('${esc(bl.label).replace(/'/g,"\\'")}')">`
+            + `<span class="caret${zu?'':' open'}">▾</span> ${esc(bl.label)}`
+            + `<span class="gcount">${bl.items.length}</span></div>`;
+      if(!zu) html += colHead;
+    }
+    if(zu) return;
     let items = bl.items;
     if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
     items.forEach(r=>{
@@ -866,7 +953,7 @@ function rowHTML(r, d, isBench, benchData){
     sts = `<span class="sts" style="color:var(--faint)">—</span>`;
     thrCell = `<span class="thr" style="color:var(--faint)">—</span>`;
     if(benchData && benchData.lastClose!=null){ chg = fmtChg(benchData.dayChg); chgCls = benchData.dayChg>=0?'pos':'neg'; }
-    metaLine = `<span class="meta"><span class="lab">Referenz</span></span>`;
+    metaLine = '';   // "Referenz" steht schon als Name darunter
   } else if(d && d.rs && d.rs.length){
     spark = histogramSVG(d.rs);
     const p = d.pct;
@@ -918,16 +1005,22 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 // nach kurzer Wartezeit auf die Website zurückfallen, falls die App nicht reagiert hat.
 // Ohne Boersenkuerzel oeffnet die TradingView-App zwar, wechselt aber das Symbol nicht.
 // Die meisten ETFs hier laufen an der NYSE Arca (in TradingView "AMEX"), der Rest an der Nasdaq.
-const NASDAQ = new Set(['QQQ','QQQE','AAPL','MSFT','AMZN','GOOGL','NVDA','AMD','TSLA','BABA','COIN',
-  'SVIX','WCLD','CLOU','IGV','BOTZ','ROBO','ARKF','ARKX','ARKG','ARKQ','QTUM','FDN','IBUY','KWEB',
-  'CHIQ','CIBR','BUG','XSW','ESPO','UFO','GRID','PAVE','SHLD','URNM','NLR','SILJ','LIT','WOOD','IPAY']);
+// Aus den tatsaechlichen Boersenplaetzen erzeugt (Yahoo) und gegen TradingView geprueft:
+// NYSEArca -> AMEX, Nasdaq -> NASDAQ, Cboe -> CBOE, NYSE -> NYSE. Ohne das richtige
+// Kuerzel meldet TradingView bei mehrfach gelisteten Tickern "symbol doesn't exist".
+const NASDAQ_TK = new Set(['AAPL','AIQ','AMD','AMZN','BOTZ','CLOU','COIN','DRIV','ESPO','ETHA','GENZ','GOOGL','GRID','HYDR','IBB','IBIT','ICLN','IGF','IJT','MSFT','NVDA','PHO','PPH','QQQ','QQQE','QTUM','SMH','SOCL','SOLZ','SOXX','TLT','TSLA','UFO','WCLD','WGMI','WOOD','XRPI']);
+const CBOE_TK   = new Set(['ARKF','ARKG','ARKK','ARKQ','ARKW','ARKX','DRAM','FDRV','IGV','ITA','ITB','IYT','IYZ','MAGS','PAVE','SVIX']);
+const NYSE_TK   = new Set(['BABA','DXYZ']);
 // Das Boersenkuerzel kennen wir nur fuer die ETFs aus der Ticker-Liste. Einzelaktien
 // (Bestandteile) liegen meist an der NYSE — dort raten waere schlimmer als weglassen,
 // TradingView loest den blanken Ticker selbst korrekt auf.
 function tvSymbol(t){
-  const isETF = ROWS.some(r=>r.type==='tk' && r.ticker===t);
-  if(!isETF) return t;
-  return (NASDAQ.has(t)?'NASDAQ:':'AMEX:') + t;
+  if(NASDAQ_TK.has(t)) return 'NASDAQ:'+t;
+  if(CBOE_TK.has(t))   return 'CBOE:'+t;
+  if(NYSE_TK.has(t))   return 'NYSE:'+t;
+  // Nur fuer Ticker aus unserer Liste kennen wir die Boerse. Bestandteile (Einzelaktien)
+  // gehen blank raus, dort loest TradingView selbst auf.
+  return ROWS.some(r=>r.type==='tk' && r.ticker===t) ? 'AMEX:'+t : t;
 }
 const CHART_SRC = {
   tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
@@ -1117,16 +1210,16 @@ function renderStatus(dataMap){
 
   // Datenstand: das angezeigte Fenster endet lagDays vor dem letzten geladenen Kurstag
   let stand = fmtDay(meta.dataDate);
-  if(meta.dataDate && lagDays>0) stand += ` − ${lagDays} Tag`;
+  if(meta.dataDate && lagDays>0) stand += `−${lagDays}T`;
   const lauf = meta.lastRun
-    ? new Date(meta.lastRun).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    ? new Date(meta.lastRun).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
     : 'nie';
 
-  let kind = 'live', txt = `Kurse ${stand} · geladen ${lauf}`, extra = `${okCount}/${syms.length}`;
+  let kind = 'live', txt = `Kurse ${stand} · ${lauf}`, extra = `${okCount}/${syms.length}`;
   if(miss.length){
     kind = meta.stopped==='limit' ? 'err' : 'warn';
-    extra = `${okCount}/${syms.length} — ${miss.length} fehlen`;
-    if(meta.stopped==='limit') txt = `API-Tageslimit erreicht${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Kurse ${stand}`;
+    extra = `${okCount}/${syms.length}`;
+    if(meta.stopped==='limit') txt = `Tageslimit${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Kurse ${stand}`;
   }
   $('#statusDot').className = 'dot ' + (kind==='err'?'err':(kind==='warn'?'warn':'live'));
   $('#statusText').textContent = txt;
@@ -1294,32 +1387,28 @@ $('#tickerBg').onclick=closeSheets; $('#setBg').onclick=closeSheets;
 
 // Reiterleiste: Übersicht + ein Reiter je Gruppe. Wird aus der Ticker-Liste aufgebaut,
 // damit eigene Gruppen automatisch einen Reiter bekommen.
+// Vier Reiter statt einem pro Gruppe. "Markt" bildet Jeffs erstes Blatt ab
+// (Index bis Sektor), "Gruppen" die Industriegruppen.
 function buildTabs(){
   const bar = $('#viewbar');
-  const labels = buildBlocks().map(b=>b.label).filter(Boolean);
-  // Kurzform fuer die Reiter, damit sie auf den Bildschirm passen
-  const short = l => l.replace(/^Equal-Weight /,'EW ').replace(/ Sektoren$/,'').replace(/ Groups$/,'');
   bar.innerHTML =
     `<button class="chip" data-tab="dash">Übersicht</button>` +
-    `<button class="chip" data-tab="*">Alle</button>` +
-    labels.map(l=>`<button class="chip" data-tab="g:${esc(l)}">${esc(short(l))}</button>`).join('');
+    `<button class="chip" data-tab="global">Markt</button>` +
+    `<button class="chip" data-tab="groups">Gruppen</button>` +
+    `<button class="chip" data-tab="stocks">Aktien</button>`;
   bar.querySelectorAll('.chip').forEach(c=>{
     c.onclick = ()=>{
-      const t = c.dataset.tab;
-      viewMode = t==='dash' ? 'dash' : 'list';
-      groupFilter = t.startsWith('g:') ? t.slice(2) : null;
+      tabMode = c.dataset.tab;
+      viewMode = tabMode==='dash' ? 'dash' : 'list';
+      localStorage.setItem('rs.tab', tabMode);
       localStorage.setItem('rs.view', viewMode);
-      localStorage.setItem('rs.grp', groupFilter||'');
-      markTabs();
-      renderCached();
-      window.scrollTo(0,0);
+      markTabs(); renderCached(); window.scrollTo(0,0);
     };
   });
   markTabs();
 }
 function markTabs(){
-  const active = viewMode==='dash' ? 'dash' : (groupFilter ? 'g:'+groupFilter : '*');
-  document.querySelectorAll('#viewbar .chip').forEach(x=>x.classList.toggle('active', x.dataset.tab===active));
+  document.querySelectorAll('#viewbar .chip').forEach(x=>x.classList.toggle('active', x.dataset.tab===tabMode));
 }
 
 // Sortier-Chips
