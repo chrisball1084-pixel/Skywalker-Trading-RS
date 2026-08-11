@@ -106,6 +106,14 @@
   .tvbtn svg{width:14px;height:14px}
   .tvbtn-ph{display:block;height:26px}
   .rank-badge{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .tk.tappable{cursor:pointer}
+  .caret{display:inline-block;font-size:9px;color:var(--faint);margin-left:4px;vertical-align:middle;transition:transform .15s}
+  .caret.open{transform:rotate(180deg);color:var(--up)}
+  .holds{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 11px;background:var(--panel2);
+    border-bottom:1px solid var(--line)}
+  .holds a{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--up);text-decoration:none;
+    background:var(--up-soft);border:1px solid #1d5a78;border-radius:12px;padding:4px 9px}
+  .holds a:active{opacity:.7}
   .col4{display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
 
   /* Übersicht / Dashboard */
@@ -187,7 +195,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-2</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -239,6 +247,20 @@
     </label>
     <button class="btn-primary" id="saveTickers">Speichern & Laden</button>
     <button class="btn-ghost" id="resetTickers">Auf Jeffs Standardliste zurücksetzen</button>
+
+    <label class="field" style="margin-top:22px">
+      <span class="lab">Bestandteile je Gruppe</span>
+      <textarea class="inp" id="holdText" spellcheck="false" autocapitalize="off" style="min-height:150px"></textarea>
+      <span class="hint">
+        Eine Zeile je Gruppe: <span style="color:var(--accent)">GDX: NEM, AEM, GOLD, …</span><br>
+        Tippst du in der Liste auf einen Ticker mit ▾, klappen seine Bestandteile auf — jeder als Chart-Link.
+        Kostet keine API-Abrufe, es werden keine Kurse geladen.<br>
+        <b>Stand August 2026, nach Gewichtung sortiert.</b> Gewichtungen verschieben sich mit der Zeit, die
+        Liste ist deshalb editierbar. Rohstoff-ETFs wie GLD oder SLV halten physisches Metall und haben keine.
+      </span>
+    </label>
+    <button class="btn-primary" id="saveHold">Bestandteile speichern</button>
+    <button class="btn-ghost" id="resetHold">Bestandteile zurücksetzen</button>
   </div>
 </div>
 
@@ -425,6 +447,49 @@ TSLA, Tesla
 COIN, Coinbase
 BABA, Alibaba`;
 
+/* ---------- Bestandteile je Gruppe ----------
+   Statischer Stand (August 2026), grob nach Gewichtung sortiert. Bewusst nur die
+   Gruppen, bei denen die Zusammensetzung stabil und eindeutig ist — Rohstoff-ETFs
+   wie GLD oder SLV halten physisches Metall und haben keine. Im Ticker-Sheet
+   editierbar; Gewichtungen verschieben sich, die Liste will gelegentlich nachgezogen
+   werden. Kostet keine API-Abrufe, es sind reine Chart-Links. */
+const DEFAULT_HOLDINGS = `GDX: NEM, AEM, GOLD, WPM, FNV, AU, KGC, GFI, RGLD, HMY
+GDXJ: PAAS, HMY, AGI, EQX, BTG, IAG, NGD, OR, DPM, EDV
+SIL: WPM, PAAS, FNV, HL, CDE, SSRM, FSM, MAG, EDR, SVM
+SILJ: CDE, HL, FSM, MAG, GATO, SVM, EDR, ASM, AYA, DSV
+COPX: FCX, SCCO, TECK, LUN, HBM, ERO, ANTO, IVN, CS, KGH
+XME: AA, X, CLF, NUE, STLD, FCX, RS, ATI, CRS, MP
+SLX: VALE, RIO, NUE, STLD, X, CLF, TX, GGB, MT, SID
+URA: CCJ, NXE, OKLO, UEC, DNN, LEU, PDN, EU, URG, LTBR
+URNM: CCJ, KAP, NXE, UEC, DNN, PDN, EU, LEU, URG, BOE
+NLR: CEG, VST, BWXT, CCJ, PEG, D, DUK, SO, EXC, LEU
+ITA: GE, RTX, BA, LMT, NOC, TDG, HWM, GD, LHX, AXON
+XAR: AVAV, RKLB, KTOS, AXON, HII, TXT, LDOS, BA, LMT, NOC
+SHLD: PLTR, RTX, GE, BA, LMT, NOC, TDG, HWM, LDOS, GD
+JETS: DAL, UAL, LUV, AAL, ALK, SKYW, ALGT, JBLU, RYAAY, CPA
+IGV: MSFT, ORCL, CRM, ADBE, NOW, INTU, PLTR, PANW, CRWD, SNOW
+BUG: CRWD, PANW, ZS, FTNT, CYBR, OKTA, QLYS, TENB, S, RPD
+CIBR: CRWD, PANW, CSCO, FTNT, ZS, CHKP, OKTA, VRNS, BAH, LDOS
+FDN: AMZN, META, GOOGL, NFLX, CRM, UBER, BKNG, ABNB, SHOP, PYPL
+XSD: NVDA, AMD, MU, AVGO, TXN, ADI, MRVL, ON, MCHP, INTC
+IHI: ABT, ISRG, SYK, BSX, MDT, EW, DXCM, BDX, ZBH, PODD
+PAVE: NUE, PWR, ETN, URI, EMR, VMC, MLM, JCI, TT, FAST
+GRID: ETN, ABB, PWR, HUBB, GEV, VRT, NVT, ATKR, AMRC, BE
+ITB: DHI, LEN, NVR, PHM, TOL, HD, LOW, BLDR, MAS, TPH
+IYZ: T, VZ, TMUS, CMCSA, CHTR, FYBR, LUMN, IRDM, GSAT, ATEX
+WOOD: WY, PCH, RYN, LPX, IP, WFG, BCC, UFPI, SUZ, SW
+KCE: GS, MS, SCHW, BLK, KKR, APO, BX, ARES, IBKR, TROW
+IPAY: V, MA, PYPL, FI, FIS, GPN, AXP, TOST, NU, DLO
+KWEB: BABA, PDD, JD, NTES, BIDU, TCOM, XPEV, LI, BILI, MNSO
+OIH: SLB, HAL, BKR, TS, FTI, NOV, CHX, WFRD, RIG, VAL
+PHO: ECL, AWK, XYL, VLTO, PNR, IEX, WTS, AOS, MWA, ROP
+ESPO: NVDA, SE, NTES, EA, RBLX, TTWO, BILI, U, PLTK, GRVY
+UFO: IRDM, RKLB, GRMN, VSAT, GSAT, PL, SPIR, ASTS, TMUS, MAXR
+QTUM: IONQ, RGTI, QBTS, HON, IBM, GOOGL, MSFT, NVDA, ALAB, MRVL
+BOTZ: NVDA, ISRG, ABB, FANUY, KEYS, SYM, PATH, TER, ZBRA, OMCL
+IBUY: AMZN, SHOP, BKNG, ABNB, DASH, EBAY, ETSY, CHWY, W, CVNA
+LIT: ALB, TSLA, SQM, PCRFY, BYDDY, ALTM, EVE, GNENY, LAC, PLL`;
+
 /* ---------- State ---------- */
 let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, name}]
 
@@ -477,6 +542,37 @@ function parseTickers(text){
 function loadTickers(){
   const raw = localStorage.getItem(LS.tickers) || DEFAULT_TICKERS;
   ROWS = parseTickers(raw);
+}
+
+/* ---------- Bestandteile ---------- */
+let HOLD = {};
+const expanded = new Set();
+function parseHoldings(text){
+  const out = {};
+  text.split(/\r?\n/).forEach(raw=>{
+    const line = raw.trim();
+    if(!line || line.startsWith('#')) return;
+    const i = line.indexOf(':');
+    if(i<1) return;
+    const key = line.slice(0,i).trim().toUpperCase();
+    const list = line.slice(i+1).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+    if(key && list.length) out[key] = list;
+  });
+  return out;
+}
+function loadHoldings(){
+  HOLD = parseHoldings(localStorage.getItem('rs.holdings') || DEFAULT_HOLDINGS);
+}
+function toggleHold(tk, ev){
+  if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  if(expanded.has(tk)) expanded.delete(tk); else expanded.add(tk);
+  renderCached();
+}
+function holdingsHTML(tk){
+  const list = HOLD[tk];
+  if(!list || !expanded.has(tk)) return '';
+  return `<div class="holds">${list.map(h=>
+    `<a href="${chartURL(h)}" target="_blank" rel="noopener">${esc(h)}</a>`).join('')}</div>`;
 }
 
 /* ---------- Sparkline (histogram) ---------- */
@@ -693,14 +789,18 @@ function rowHTML(r, d, isBench, benchData){
   const tvIcon = isBench ? '<span class="tvbtn-ph"></span>' : `<a class="tvbtn" href="${chartURL(r.ticker)}" target="_blank" rel="noopener" aria-label="Chart ${esc(r.ticker)}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="4 14 9 9 13 13 20 6"/><polyline points="15 6 20 6 20 11"/></svg></a>`;
   const nm = `<span class="nm">${esc(r.name||'')}</span>`;
+  // Gruppen mit hinterlegten Bestandteilen lassen sich aufklappen
+  const hasHold = !isBench && HOLD[r.ticker];
+  const caret = hasHold ? `<span class="caret${expanded.has(r.ticker)?' open':''}">▾</span>` : '';
+  const tkAttr = hasHold ? ` role="button" tabindex="0" onclick="toggleHold('${esc(r.ticker)}',event)"` : '';
   return `<div class="row${isBench?' bench-row':''}">
     <span class="rank-badge" style="background:${barCol}"></span>
-    <span class="tk">${esc(r.ticker)}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
+    <span class="tk${hasHold?' tappable':''}"${tkAttr}>${esc(r.ticker)}${caret}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
     ${spark}
     ${thrCell}
     ${sts}
     <span class="col4">${tvIcon}</span>
-  </div>`;
+  </div>${isBench?'':holdingsHTML(r.ticker)}`;
 }
 function fmtChg(v){ if(v==null||isNaN(v)) return ''; const s=v>=0?'+':''; return s+v.toFixed(1)+'%'; }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -714,8 +814,16 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const NASDAQ = new Set(['QQQ','QQQE','AAPL','MSFT','AMZN','GOOGL','NVDA','AMD','TSLA','BABA','COIN',
   'SVIX','WCLD','CLOU','IGV','BOTZ','ROBO','ARKF','ARKX','ARKG','ARKQ','QTUM','FDN','IBUY','KWEB',
   'CHIQ','CIBR','BUG','XSW','ESPO','UFO','GRID','PAVE','SHLD','URNM','NLR','SILJ','LIT','WOOD','IPAY']);
+// Das Boersenkuerzel kennen wir nur fuer die ETFs aus der Ticker-Liste. Einzelaktien
+// (Bestandteile) liegen meist an der NYSE — dort raten waere schlimmer als weglassen,
+// TradingView loest den blanken Ticker selbst korrekt auf.
+function tvSymbol(t){
+  const isETF = ROWS.some(r=>r.type==='tk' && r.ticker===t);
+  if(!isETF) return t;
+  return (NASDAQ.has(t)?'NASDAQ:':'AMEX:') + t;
+}
 const CHART_SRC = {
-  tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent((NASDAQ.has(t)?'NASDAQ:':'AMEX:') + t),
+  tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
   tvpl: t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(t),
   fv:   t => 'https://finviz.com/quote.ashx?t=' + encodeURIComponent(t),
   sc:   t => 'https://stockcharts.com/h-sc/ui?s=' + encodeURIComponent(t)
@@ -1042,7 +1150,7 @@ function toast(msg,isErr){
 function openSheet(which){
   const bg = which==='ticker'?$('#tickerBg'):$('#setBg');
   const sh = which==='ticker'?$('#tickerSheet'):$('#setSheet');
-  if(which==='ticker'){ $('#tickerText').value = localStorage.getItem(LS.tickers)||DEFAULT_TICKERS; }
+  if(which==='ticker'){ $('#tickerText').value = localStorage.getItem(LS.tickers)||DEFAULT_TICKERS; $('#holdText').value = localStorage.getItem('rs.holdings')||DEFAULT_HOLDINGS; }
   if(which==='set'){
     $('#apiKey').value = localStorage.getItem(LS.key)||'';
     $('#benchSel').value = benchmark;
@@ -1113,6 +1221,16 @@ $('#saveTickers').onclick = ()=>{
   toast('Ticker gespeichert'); 
   setTimeout(refresh, 250);
 };
+$('#saveHold').onclick = ()=>{
+  localStorage.setItem('rs.holdings', $('#holdText').value);
+  loadHoldings(); closeSheets(); renderCached();
+  toast(`Bestandteile gespeichert · ${Object.keys(HOLD).length} Gruppen`);
+};
+$('#resetHold').onclick = ()=>{
+  $('#holdText').value = DEFAULT_HOLDINGS;
+  localStorage.setItem('rs.holdings', DEFAULT_HOLDINGS);
+  loadHoldings(); renderCached(); toast('Bestandteile zurückgesetzt');
+};
 $('#resetTickers').onclick = ()=>{
   $('#tickerText').value = DEFAULT_TICKERS;
   localStorage.setItem(LS.tickers, DEFAULT_TICKERS);
@@ -1174,6 +1292,7 @@ $('#testConn').onclick = async ()=>{
 
 /* ---------- Init ---------- */
 loadTickers();
+loadHoldings();
 $('#benchLabel').textContent = benchmark;
 document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x.dataset.sort===sortMode));
 buildTabs();
