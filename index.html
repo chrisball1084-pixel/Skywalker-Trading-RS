@@ -100,6 +100,12 @@
   .thr{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;padding:5px 2px;border-radius:7px}
   .chg{font-family:var(--mono);font-size:11px;text-align:right;color:var(--dim);display:block}
   .chg.pos{color:var(--up)} .chg.neg{color:var(--down)}
+  .dayrs{margin-left:7px;font-size:10px;font-weight:700;opacity:.8}
+  .dayrs.pos{color:var(--up)} .dayrs.neg{color:var(--down)}
+  .dayrs.hi{opacity:1;background:var(--up-soft);border-radius:8px;padding:1px 5px}
+  /* hervorgehobene Spalte des gewaehlten Zeitraums */
+  .sts.hi,.thr.hi{outline:1.5px solid var(--up);outline-offset:1px}
+  .colhead span.hi{color:var(--up)}
   .tvbtn{width:100%;height:26px;display:flex;align-items:center;justify-content:center;
     background:transparent;border:none;cursor:pointer;color:var(--faint);margin-top:3px}
   .tvbtn:active{color:var(--accent)}
@@ -195,7 +201,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-2</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-3</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -214,12 +220,12 @@
   </div>
   <div class="sortbar" id="viewbar"></div>
   <div class="sortbar" id="sortbar">
-    <span class="sortlbl">Sortieren</span>
-    <button class="chip active" data-sort="orig">Original</button>
-    <button class="chip" data-sort="pct">RS %</button>
-    <button class="chip" data-sort="thrust">Thrust</button>
-    <button class="chip" data-sort="dayrs">Tag RS</button>
-    <button class="chip" data-sort="chg">Tag %</button>
+    <span class="sortlbl">Zeitraum</span>
+    <button class="chip active" data-sort="orig">Liste</button>
+    <button class="chip" data-sort="dayrs">Tag</button>
+    <button class="chip" data-sort="thrust">Woche</button>
+    <button class="chip" data-sort="pct">Monat</button>
+    <button class="chip" data-sort="chg">Kurs Tag</button>
   </div>
 </header>
 
@@ -311,6 +317,15 @@
       Wechseln kostet kein Neuladen — die Werte werden sofort neu berechnet.</span>
     </label>
     <label class="field">
+      <span class="lab">Tages-Kennzahl</span>
+      <select class="inp" id="sigSel">
+        <option value="0">Roh — RS-Veränderung in Prozent</option>
+        <option value="1">Volatilitätsbereinigt — in Sigma</option>
+      </select>
+      <span class="hint"><b>Roh</b> beantwortet „wo ist am meisten Kapital bewegt worden". <b>Sigma</b> beantwortet „für welche Gruppe war die Bewegung ungewöhnlich" — die Tages-RS geteilt durch die eigene übliche Tagesschwankung.<br>
+      Gemessen über 60 Handelstage: Nach roher Tages-RS landen volatile Gruppen häufiger in den Top 5 (Korrelation mit Volatilität +0,36), nach Sigma dagegen die ruhigen (−0,45). Beides ist eine Schlagseite, nur in verschiedene Richtungen — deshalb beide Brillen statt einer. Die Monatsspalte braucht das nicht: Sie ist ein Rang, kein Betrag, und damit ohnehin fast unabhängig von der Volatilität (+0,22).</span>
+    </label>
+    <label class="field">
       <span class="lab">Chart-Ziel (Symbol rechts in der Zeile)</span>
       <select class="inp" id="chartSel">
         <option value="tv">TradingView — mit Börsenkürzel (AMEX:/NASDAQ:)</option>
@@ -358,17 +373,17 @@ IVV, S&P 500
 IVW, LargeCap 500 Growth
 #Equal-Weight Sektoren
 SPY, S&P 500 (Anker)
+RSPT, EW Technology
 RSPM, EW Materials
 RSPD, EW Discretionary
-RSPN, EW Industrial
-RSPT, EW Technology
 RSPH, EW Health Care
 RSPF, EW Financials
-RSPS, EW Staples
 RSPC, EW Communication
-RSPR, EW Real Estate
-RSPU, EW Utilities
+RSPN, EW Industrial
+RSPS, EW Staples
 RSPG, EW Energy
+RSPU, EW Utilities
+RSPR, EW Real Estate
 #SPDR Sektoren
 SPY, S&P 500 (Anker)
 XLB, Materials
@@ -382,60 +397,137 @@ XLE, Energy
 XLRE, Real Estate
 XLP, Consumer Staples
 XLU, Utilities
-#Industry Groups
-GDXJ, Junior Gold Miners
-GDX, Gold Miners
-SILJ, Junior Silver Miners
-SIL, Silver Miners
-SLV, Silver
+#Metalle & Rohstoffe
 GLD, Gold
+SLV, Silber
 PALL, Palladium
-PPLT, Platinum
+PLTM, Platin
+GDX, Gold Miners
+GDXJ, Junior Gold Miners
+SIL, Silver Miners
+SILJ, Junior Silver Miners
 COPX, Copper Miners
 XME, Metals & Mining
 SLX, Steel
+REMX, Rare Earths
 GNR, Natural Resources
-PHO, Water Purification & Infrastructure
+GUNR, Upstream Natural Resources
+MOO, Global Agricultural Producers
+WOOD, Timber & Lumber
+#Energie
+USO, Crude Oil
+UNG, Natural Gas
+XOP, Oil & Gas E&P
+FCG, Natural Gas E&P
+OIH, Large-Cap Oil Services
+XES, Oil & Gas Equipment & Services
+AMLP, Energy MLPs
+TAN, Solar
+ICLN, Clean Energy
+PBW, Clean Energy (Wilder)
+HYDR, Hydrogen & Fuel Cells
 URA, Uranium
 URNM, Uranium Miners
-ESPO, E-Sports
 NLR, Nuclear Power
-ITA, Aerospace & Defense
-XAR, Aerospace & Defense EW
-SHLD, Global Defense Tech
-JETS, Airlines
+#Tech & Internet
+IGV, US Tech / Software
 XSW, Software EW
-IGV, Tech-Software
-BUG, Pure Cybersecurity
-CIBR, Cybersecurity
 WCLD, Cloud Tech
 CLOU, Cloud Infra & SaaS
 FDN, US Internet Giants
-XSD, Semiconductors
+IDGT, Digital Infra & Data Center
+SOCL, Social Media
+BUZZ, Social Sentiment
+MAGS, Magnificent 7
+ARKK, ARK Innovation
+ARKW, ARK Internet & Next-Gen
+DXYZ, Pre-IPO & Private Unicorns
+#Halbleiter & KI
+SMH, Semiconductor Giants
+SOXX, Broad Semiconductor
+XSD, Semiconductors EW
+DRAM, Memory
+AIQ, AI Software & Data
+BAI, AI & Tech Active
+QTUM, Quantum / AI
 ROBO, Robotics & Automation
 BOTZ, AI & Robotics
-KCE, Capital Markets & Financials
+ARKQ, ARK Robotics
+#Finanz & Fintech
 IPAY, Digital Payments & Fintech
 ARKF, ARK Fintech
-XHE, Health Devices
-IHI, Med-Tech & Surgical
+IAI, Broker-Dealers
+KCE, Capital Markets
+KRE, Regional Banks
+KBE, Large-Cap Banking
+KIE, Insurance
+#Krypto
+IBIT, Bitcoin Spot
+ETHA, Ether Spot
+SOLZ, Solana Spot
+XRPI, XRP Spot
+BLOK, Blockchain
+WGMI, Crypto Mining
+MEME, Meme Stocks
+#Gesundheit
+IBB, Biotech Megacap
+XBI, Biotech EW
+PBE, Dynamic Biotech
 XPH, Pharmaceuticals EW
+PPH, Large-Cap Pharma
+IHI, Med-Tech & Surgical
+XHE, Health Devices
+XHS, Healthcare Facilities
+IHF, Health Care Providers
+ARKG, ARK Genomics
+CNBS, Cannabis
+#Industrie & Infrastruktur
 PAVE, US Infrastructure
-GRID, Infrastructure & Electrical
-ITB, Homebuilders
-IYZ, Telecommunications
+GRID, Infra & Electrical Equipment
+IGF, Global Infrastructure
+PHO, Water Purification
+ITA, Aerospace & Defense
+XAR, Aerospace & Defense EW
+SHLD, Global Defense Tech
+NASA, Space Economy
+UFO, Space Industry
+ARKX, ARK Space Exploration
+BOAT, Global Shipping
+IYT, Transportation
+XTN, Trucking
+JETS, Airlines
+DRIV, EV & Autonomous Vehicles
+FDRV, EV & Future Transportation
 LIT, Lithium & Battery
-WOOD, Timber & Lumber
+#Konsum & Freizeit
+XRT, Retail
+IBUY, Global E-Commerce
+PBJ, Food & Beverage
+EATZ, Global Restaurants
+PEJ, Leisure & Travel
+GENZ, Global Gaming & Casinos
+BETZ, Sports Betting
+ESPO, E-Sports
+XHB, Homebuilders EW
+ITB, Homebuilders
+SCHH, US REITs
+#Telekom
+IYZ, Telecommunications Services
+XTL, Telecom
+#Regionen
+FXI, China Large-Caps
+GXC, China ETF
+ASHR, China A-Shares
 KWEB, Chinese Tech & E-Commerce
 CHIQ, China Consumer
-IBUY, Global E-Commerce
-ARKX, ARK Space Exploration
-UFO, Space Industry
-ARKQ, ARK Autonomous & Robotics
-QTUM, Quantum & AI
-OIH, Large-Cap Oil Services
-ARKG, ARK Genomics
+KURE, China Health
+EWY, South Korea
+EWZ, Brasilien
+ARGT, Argentinien
+ILF, Latin America 40
+#Sonstige
 SVIX, Short VIX Futures
+FFTY, IBD 50
 #Stocks
 NVDA, NVIDIA
 AAPL, Apple
@@ -520,7 +612,8 @@ let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' | 'stoch
 // einen Handelstag hinterher. Mit diesem Versatz treffen wir sein Sheet exakt (58/58 geprueft).
 let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
 const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
-let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv';   // Ziel des Chart-Icons
+let chartSrc = localStorage.getItem('rs.chartsrc') || 'tvpl'; // Ziel des Chart-Icons
+let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let groupFilter = localStorage.getItem('rs.grp') || null;     // null = alle Gruppen
 let sortMode = localStorage.getItem('rs.sort') || 'orig';
@@ -700,7 +793,9 @@ function renderDash(dataMap){
 
     // Die drei Zeitebenen: Tag = RS-Rotation von gestern, Woche = Thrust, Monat = RS %
     const ebenen = [
-      {t:'Tag',  key:'dayRS',  txt:d=>d.dayRS==null?'—':sign(d.dayRS),           col:d=>posCol(d.dayRS)},
+      sigmaDay
+        ? {t:'Tag', key:'daySigma', txt:d=>d.daySigma==null?'—':(d.daySigma>=0?'+':'')+d.daySigma.toFixed(1)+'σ', col:d=>posCol(d.daySigma)}
+        : {t:'Tag', key:'dayRS',    txt:d=>d.dayRS==null?'—':sign(d.dayRS),      col:d=>posCol(d.dayRS)},
       {t:'Woche',key:'thrust', txt:d=>d.thrust==null?'—':Math.round(d.thrust*100)+'%', col:d=>d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)')},
       {t:'Monat',key:'pct',    txt:d=>d.pct==null?'—':Math.round(d.pct*100)+'%', col:d=>d.pct==null?'var(--faint)':(d.pct>=.65?'var(--up)':(d.pct<.3?'var(--down)':'var(--dim)'))}
     ];
@@ -742,11 +837,16 @@ function render(dataMap){
     if(!d) return -Infinity;
     if(sortMode==='pct') return d.pct==null?-Infinity:d.pct;
     if(sortMode==='thrust') return d.thrust==null?-Infinity:d.thrust;
-    if(sortMode==='dayrs') return d.dayRS==null?-Infinity:d.dayRS;
+    if(sortMode==='dayrs'){
+      const v = sigmaDay ? d.daySigma : d.dayRS;
+      return v==null?-Infinity:v;
+    }
     if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
     return 0;
   };
-  const colHead = `<div class="colhead"><span></span><span></span><span>Thrust</span><span>RS ${windowN}T</span><span></span></div>`;
+  const colHead = `<div class="colhead"><span></span><span></span>`
+    + `<span class="${sortMode==='thrust'?'hi':''}">Woche</span>`
+    + `<span class="${sortMode==='pct'?'hi':''}">Monat ${windowN}T</span><span></span></div>`;
   blocks.forEach(bl=>{
     if(bl.label) html += `<div class="group-head">${esc(bl.label)}</div>` + colHead;
     let items = bl.items;
@@ -771,11 +871,18 @@ function rowHTML(r, d, isBench, benchData){
     spark = histogramSVG(d.rs);
     const p = d.pct;
     const c = stsColor(p);
-    sts = `<span class="sts" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
+    sts = `<span class="sts${sortMode==='pct'?' hi':''}" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
     if(p!=null){ barCol = p>=0.65?'var(--up)':(p<0.3?'var(--down)':'var(--faint)'); }
+    // Beide Tageswerte nebeneinander: Kursbewegung und RS-Bewegung. Nur die zweite zeigt Rotation.
     if(d.dayChg!=null){ chg = fmtChg(d.dayChg); chgCls = d.dayChg>=0?'pos':'neg'; }
+    if(d.dayRS!=null){
+      const useSig = sigmaDay && d.daySigma!=null;
+      const v = useSig ? d.daySigma : d.dayRS;
+      const txt = useSig ? (v>=0?'+':'')+v.toFixed(1)+'σ' : fmtChg(v);
+      chg += `<span class="dayrs ${v>=0?'pos':'neg'}${sortMode==='dayrs'?' hi':''}">RS ${txt}</span>`;
+    }
     const t = thrColor(d.thrust);
-    thrCell = `<span class="thr" style="background:${t.bg};color:${t.fg}">${d.thrust==null?'—':Math.round(d.thrust*100)+'%'}</span>`;
+    thrCell = `<span class="thr${sortMode==='thrust'?' hi':''}" style="background:${t.bg};color:${t.fg}">${d.thrust==null?'—':Math.round(d.thrust*100)+'%'}</span>`;
     metaLine = '';
   } else {
     spark = emptySpark;
@@ -1078,6 +1185,17 @@ function applyPct(dataMap){
     // Tages-RS: Veraenderung der RS am letzten Tag, in Prozent. Misst Rotation —
     // steigt alles gleich stark, ist das 0, obwohl die Tagesperformance hoch war.
     d.dayRS = w.length>=2 ? (w.at(-1)/w.at(-2) - 1) * 100 : null;
+    // Volatilitaetsbereinigte Variante: Tages-RS in Standardabweichungen der eigenen
+    // RS-Tagesschwankung. Antwortet auf "wie ungewoehnlich war die Bewegung fuer diese
+    // Gruppe" statt "wie gross war sie". Braucht keine zusaetzlichen Kursdaten.
+    d.daySigma = null;
+    if(w.length>=8){
+      const ch = [];
+      for(let i=1;i<w.length;i++) ch.push(w[i]/w[i-1]-1);
+      const mean = ch.reduce((a,b)=>a+b,0)/ch.length;
+      const sd = Math.sqrt(ch.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(ch.length-1));
+      if(sd>0) d.daySigma = (ch.at(-1)) / sd;
+    }
     d.pct = pctMode==='stoch' ? d.stochPct : d.timePct;
   });
   if(pctMode==='peer') computePeerRanks(dataMap);
@@ -1158,6 +1276,7 @@ function openSheet(which){
     $('#pctSel').value = pctMode;
     $('#lagSel').value = String(lagDays);
     $('#chartSel').value = chartSrc;
+    $('#sigSel').value = sigmaDay?'1':'0';
     $('#pctWinLbl').textContent = windowN;
   }
   bg.classList.add('open'); sh.classList.add('open');
@@ -1245,6 +1364,7 @@ $('#saveSettings').onclick = ()=>{
   windowN = Math.max(10,Math.min(60,+$('#windowN').value||21)); localStorage.setItem(LS.win, windowN);
   pctMode = $('#pctSel').value; localStorage.setItem('rs.pctmode', pctMode);
   chartSrc = $('#chartSel').value; localStorage.setItem('rs.chartsrc', chartSrc);
+  sigmaDay = $('#sigSel').value==='1'; localStorage.setItem('rs.sigma', sigmaDay?'1':'0');
   lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
   activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
