@@ -65,7 +65,13 @@
   .status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
   .status .dot.live{background:var(--up);box-shadow:0 0 8px var(--up)}
   .status .dot.err{background:var(--down)}
+  .status .dot.warn{background:var(--gold);box-shadow:0 0 8px var(--gold)}
   .status.hidden{display:none}
+  .status #statusText{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .status #statusMeta{display:flex;align-items:center;gap:7px;flex:none}
+  button.ministat{background:var(--up-soft);border:1px solid #1d5a78;color:var(--up);
+    font-family:var(--sans);font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:11px;cursor:pointer}
+  button.ministat:active{transform:scale(.96)}
 
   main{padding:0 0 40px}
   .group-head{
@@ -181,7 +187,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.10-4</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-1</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -204,6 +210,7 @@
     <button class="chip active" data-sort="orig">Original</button>
     <button class="chip" data-sort="pct">RS %</button>
     <button class="chip" data-sort="thrust">Thrust</button>
+    <button class="chip" data-sort="dayrs">Tag RS</button>
     <button class="chip" data-sort="chg">Tag %</button>
   </div>
 </header>
@@ -592,23 +599,27 @@ function renderDash(dataMap){
       const d = has(r.ticker);
       return `<a class="ln" href="${chartURL(r.ticker)}" target="_blank" rel="noopener"><b>${esc(r.ticker)}</b><i>${esc(r.name||'')}</i><u style="color:${col(d)}">${val(d)}</u></a>`;
     };
-    const pctTxt = d => d.pct==null?'—':Math.round(d.pct*100)+'%';
-    const pctCol = d => d.pct==null?'var(--faint)':(d.pct>=.65?'var(--up)':(d.pct<.3?'var(--down)':'var(--dim)'));
-    const thrTxt = d => d.thrust==null?'—':Math.round(d.thrust*100)+'%';
-    const thrCol2 = d => d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)');
-    const byThr = [...items].sort((a,b)=> (has(b.ticker).thrust??-1)-(has(a.ticker).thrust??-1));
-    const n = Math.min(3, Math.floor(items.length/2)) || 1;
+    const sign = v => (v>=0?'+':'') + v.toFixed(1) + '%';
+    const posCol = v => v==null?'var(--faint)':(v>=0?'var(--up)':'var(--down)');
 
-    html += `<div class="dash-cols">
-      <div class="dash-card"><h5>Monat · stark</h5>${byPct.slice(0,n).map(r=>line(r,pctTxt,pctCol)).join('')}</div>
-      <div class="dash-card"><h5>Woche · stark</h5>${byThr.slice(0,n).map(r=>line(r,thrTxt,thrCol2)).join('')}</div>
-      <div class="dash-card"><h5>Monat · schwach</h5>${byPct.slice(-n).reverse().map(r=>line(r,pctTxt,pctCol)).join('')}</div>
-      <div class="dash-card"><h5>Woche · schwach</h5>${byThr.slice(-n).reverse().map(r=>line(r,thrTxt,thrCol2)).join('')}</div>
-    </div></div>`;
+    // Die drei Zeitebenen: Tag = RS-Rotation von gestern, Woche = Thrust, Monat = RS %
+    const ebenen = [
+      {t:'Tag',  key:'dayRS',  txt:d=>d.dayRS==null?'—':sign(d.dayRS),           col:d=>posCol(d.dayRS)},
+      {t:'Woche',key:'thrust', txt:d=>d.thrust==null?'—':Math.round(d.thrust*100)+'%', col:d=>d.thrust==null?'var(--faint)':(d.thrust>=1?'var(--up)':'var(--down)')},
+      {t:'Monat',key:'pct',    txt:d=>d.pct==null?'—':Math.round(d.pct*100)+'%', col:d=>d.pct==null?'var(--faint)':(d.pct>=.65?'var(--up)':(d.pct<.3?'var(--down)':'var(--dim)'))}
+    ];
+    const n = Math.min(3, Math.floor(items.length/2)) || 1;
+    html += '<div class="dash-cols">' + ebenen.map(e=>{
+      const sorted = [...items].sort((a,b)=> (has(b.ticker)[e.key]??-Infinity)-(has(a.ticker)[e.key]??-Infinity));
+      return `<div class="dash-card"><h5>${e.t} · stark</h5>${sorted.slice(0,n).map(r=>line(r,e.txt,e.col)).join('')}</div>
+              <div class="dash-card"><h5>${e.t} · schwach</h5>${sorted.slice(-n).reverse().map(r=>line(r,e.txt,e.col)).join('')}</div>`;
+    }).join('') + '</div></div>';
   });
-  html += `<div class="dash-legend">Streifen: nach RS %, stärkster links. Grün = oberes Ende der ${windowN}-Tage-Spanne.<br>
-    Monat = RS % über ${windowN} Handelstage · Woche = Thrust (1-Wochen-gewichtete RS).<br>
-    Tippen öffnet den Chart.</div>`;
+  const stand = fmtDay((loadMeta()||{}).dataDate);
+  html += `<div class="dash-legend">Streifen: nach Monats-RS, stärkster links.<br>
+    <b>Tag</b> = RS-Veränderung am letzten Tag — misst Rotation, nicht Tagesperformance.<br>
+    <b>Woche</b> = Thrust · <b>Monat</b> = RS-Perzentil über ${windowN} Handelstage.<br>
+    Kursstand ${stand}${lagDays>0?` − ${lagDays} Tag (wie Jeffs Sheet)`:''}. Tippen öffnet den Chart.</div>`;
   $('#main').innerHTML = html || emptyState('tickers');
 }
 
@@ -618,6 +629,7 @@ function render(dataMap){
     main.innerHTML = emptyState('setup'); return;
   }
   if(!ROWS.length){ main.innerHTML = emptyState('tickers'); return; }
+  renderStatus(dataMap);
   $('#sortbar').style.display = viewMode==='dash' ? 'none' : '';
   if(viewMode==='dash'){ renderDash(dataMap); return; }
 
@@ -634,6 +646,7 @@ function render(dataMap){
     if(!d) return -Infinity;
     if(sortMode==='pct') return d.pct==null?-Infinity:d.pct;
     if(sortMode==='thrust') return d.thrust==null?-Infinity:d.thrust;
+    if(sortMode==='dayrs') return d.dayRS==null?-Infinity:d.dayRS;
     if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
     return 0;
   };
@@ -845,16 +858,66 @@ async function refresh(opts={}){
   }
   releaseWakeLock();
   applyPct(dataMap);
-  render(dataMap); saveCache(dataMap);
-  const when = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  saveCache(dataMap);
+  saveMeta({
+    lastRun: Date.now(),
+    dataDate: benchSeries.at(-1).d,
+    bench: benchSym,
+    stopped: limitHit ? 'limit' : (failed.length ? 'fehler' : null),
+    failed: failed.slice(0,20),
+    stoppedAt: limitHit ? failed.at(-1) : null
+  });
+  render(dataMap);
   if(limitHit){
-    showStatus('err','API-Tageslimit erreicht', `${done}/${totalTodo} geladen`);
     toast('Twelve-Data-Limit erreicht. Restliche Ticker morgen laden – bereits geladene bleiben erhalten.', true);
-  } else {
-    const stillMissing = syms.filter(sym=>sym!==benchSym && (!dataMap[sym]||!dataMap[sym].rs)).length;
-    showStatus('live', stillMissing?`Fertig · ${stillMissing} fehlen noch`:'Alle geladen', when);
-    if(failed.length) toast('Nicht geladen: '+failed.slice(0,6).join(', ')+(failed.length>6?' …':''), true);
+  } else if(failed.length){
+    toast('Nicht geladen: '+failed.slice(0,6).join(', ')+(failed.length>6?' …':''), true);
   }
+}
+
+/* ---------- Ladezustand ---------- */
+function saveMeta(o){ try{ localStorage.setItem('rs.meta', JSON.stringify(o)); }catch(e){} }
+function loadMeta(){ try{ return JSON.parse(localStorage.getItem('rs.meta')||'null'); }catch(e){ return null; } }
+
+// Welche Ticker fehlen noch? Basis fuer Statuszeile und "Fehlende laden".
+function missingSyms(dataMap){
+  const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
+  return syms.filter(s=> s!==activeBench && !(dataMap && dataMap[s] && (dataMap[s].rsFull||dataMap[s].rs)));
+}
+function fmtDay(iso){
+  if(!iso) return '–';
+  const p = String(iso).slice(0,10).split('-');
+  return p.length===3 ? `${p[2]}.${p[1]}.${p[0].slice(2)}` : iso;
+}
+function renderStatus(dataMap){
+  if(running) return;                       // waehrend des Ladens zeigt showStatus den Fortschritt
+  const el = $('#status'); if(!el) return;
+  if(!localStorage.getItem(LS.key)){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+
+  const meta = loadMeta() || {};
+  const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))].filter(s=>s!==activeBench);
+  const miss = missingSyms(dataMap);
+  const okCount = syms.length - miss.length;
+
+  // Datenstand: das angezeigte Fenster endet lagDays vor dem letzten geladenen Kurstag
+  let stand = fmtDay(meta.dataDate);
+  if(meta.dataDate && lagDays>0) stand += ` − ${lagDays} Tag`;
+  const lauf = meta.lastRun
+    ? new Date(meta.lastRun).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    : 'nie';
+
+  let kind = 'live', txt = `Kurse ${stand} · geladen ${lauf}`, extra = `${okCount}/${syms.length}`;
+  if(miss.length){
+    kind = meta.stopped==='limit' ? 'err' : 'warn';
+    extra = `${okCount}/${syms.length} — ${miss.length} fehlen`;
+    if(meta.stopped==='limit') txt = `API-Tageslimit erreicht${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Kurse ${stand}`;
+  }
+  $('#statusDot').className = 'dot ' + (kind==='err'?'err':(kind==='warn'?'warn':'live'));
+  $('#statusText').textContent = txt;
+  $('#statusMeta').innerHTML = miss.length
+    ? `<span title="${esc(miss.slice(0,25).join(', '))}">${extra}</span> <button class="ministat" onclick="refresh()">Fehlende laden</button>`
+    : extra;
 }
 
 // RS_STS % = Zeit-Perzentil der heutigen RS innerhalb des Fensters.
@@ -904,6 +967,9 @@ function applyPct(dataMap){
     d.timePct = percentRank(d.rs, d.rs.at(-1));
     d.stochPct = stochPos(d.rs);
     d.thrust = weightedThrust(d.rs);
+    // Tages-RS: Veraenderung der RS am letzten Tag, in Prozent. Misst Rotation —
+    // steigt alles gleich stark, ist das 0, obwohl die Tagesperformance hoch war.
+    d.dayRS = w.length>=2 ? (w.at(-1)/w.at(-2) - 1) * 100 : null;
     d.pct = pctMode==='stoch' ? d.stochPct : d.timePct;
   });
   if(pctMode==='peer') computePeerRanks(dataMap);
