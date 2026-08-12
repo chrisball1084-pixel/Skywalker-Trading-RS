@@ -219,7 +219,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-3</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-4</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -365,16 +365,16 @@
     <label class="field">
       <span class="lab">Chart-Ziel (Symbol rechts in der Zeile)</span>
       <select class="inp" id="chartSel">
-        <option value="app1">TradingView-App — Variante A</option>
-        <option value="app2">TradingView-App — Variante B</option>
-        <option value="app3">TradingView-App — Variante C</option>
-        <option value="app4">TradingView-App — Variante D</option>
+        <option value="saf1">App über Safari — Chart (Variante E)</option>
+        <option value="saf2">App über Safari — Symbolseite (Variante F)</option>
+        <option value="app5">App direkt — Variante G</option>
+        <option value="app6">App direkt — Variante H</option>
         <option value="tv">TradingView-Website — mit Börsenkürzel</option>
         <option value="tvpl">TradingView-Website — nur Ticker</option>
         <option value="fv">Finviz</option>
         <option value="sc">StockCharts</option>
       </select>
-      <span class="hint" style="color:var(--gold)">Die vier App-Varianten unterscheiden sich nur in der Schreibweise des Aufrufs. Welche die iOS-App versteht, kann ich hier nicht testen — <b>probier sie der Reihe nach durch</b> und sag mir, welche den richtigen Chart öffnet. Dann setze ich sie fest und werfe die anderen raus. Öffnet keine die App, bleib bei Finviz.</span>
+      <span class="hint" style="color:var(--gold)">Varianten A–D sind raus: Sie öffneten die App, aber ohne Symbol. TradingView hat gar kein eigenes URL-Schema mit Symbolübergabe — die App fängt stattdessen normale <span style="color:var(--accent)">tradingview.com</span>-Links ab. <b>E und F</b> nutzen das: Sie zwingen iOS, den Link in Safari selbst zu öffnen statt im eingebetteten Browser, und dort übergibt Safari an die App. <b>Fang mit E an.</b> G und H sind noch zwei Schema-Schreibweisen als Rückfallebene.</span>
       <span class="hint">Die Börsenkürzel stammen aus den echten Notierungen aller Ticker, nicht aus Schätzungen — <span style="color:var(--accent)">CBOE:ARKQ</span>, <span style="color:var(--accent)">NASDAQ:SOXX</span>, <span style="color:var(--accent)">AMEX:XLF</span>. <b>Finviz</b> hat keine App und öffnet im Browser, zeigt dafür aber jeden Ticker zuverlässig.</span>
     </label>
     <label class="field">
@@ -744,6 +744,14 @@ let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
 // Zugeklappte Gruppen-Ueberschriften
 let collapsed = new Set((localStorage.getItem('rs.collapsed')||'').split('|').filter(Boolean));
+// Alle Gruppen zuklappen — nach Ansichtswechsel und nach dem Laden, damit die Liste
+// aufgeraeumt startet. Bei nur einem Block bleibt er offen, sonst waere der Schirm leer.
+function collapseAll(){
+  const labels = buildBlocks().map(b=>b.label).filter(Boolean);
+  if(labels.length<2){ collapsed.clear(); }
+  else labels.forEach(l=>collapsed.add(l));
+  localStorage.setItem('rs.collapsed', [...collapsed].join('|'));
+}
 function toggleGroup(label){
   if(collapsed.has(label)) collapsed.delete(label); else collapsed.add(label);
   localStorage.setItem('rs.collapsed', [...collapsed].join('|'));
@@ -1168,11 +1176,16 @@ function tvSymbol(t){
 // Eine installierte Web-App oeffnet JEDE https-Adresse im eingebetteten Safari, egal ob
 // mit oder ohne neuen Tab — deshalb kam bisher immer die Website. Ein eigenes URL-Schema
 // ist dagegen keine Webadresse und wird von iOS direkt an die App uebergeben.
+// TradingView dokumentiert kein eigenes URL-Schema; die Apps fangen stattdessen normale
+// tradingview.com-Links ab (Universal Links). Deshalb oeffnen die tradingview://-Varianten
+// zwar die App, verstehen aber kein Symbol. Der Umweg: x-safari-https:// zwingt iOS, den
+// Link in Safari selbst zu oeffnen statt im eingebetteten Browser der Web-App — und dort
+// greift der Universal Link und uebergibt an die App.
 const CHART_SRC = {
-  app1: t => 'tradingview://chart?symbol=' + encodeURIComponent(tvSymbol(t)),
-  app2: t => 'tradingview://chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
-  app3: t => 'tradingview://symbol/' + encodeURIComponent(tvSymbol(t)),
-  app4: t => 'tradingview://' + encodeURIComponent(tvSymbol(t)),
+  saf1: t => 'x-safari-https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
+  saf2: t => 'x-safari-https://www.tradingview.com/symbols/' + encodeURIComponent(tvSymbol(t).replace(':','-')) + '/',
+  app5: t => 'tradingview://chart?tvwidgetsymbol=' + encodeURIComponent(tvSymbol(t)),
+  app6: t => 'tradingview://open?symbol=' + encodeURIComponent(tvSymbol(t)),
   tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
   tvpl: t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(t),
   fv:   t => 'https://finviz.com/quote.ashx?t=' + encodeURIComponent(t),
@@ -1343,6 +1356,7 @@ async function refresh(opts={}){
   }
   releaseWakeLock();
   applyPct(dataMap);
+  collapseAll();
   saveCache(dataMap);
   saveMeta({
     lastRun: Date.now(),
@@ -1599,7 +1613,7 @@ function buildTabs(){
     c.onclick = ()=>{
       tabMode = c.dataset.tab;
       viewMode = tabMode==='dash' ? 'dash' : 'list';
-      collapsed.clear(); localStorage.removeItem('rs.collapsed');   // Ansichtswechsel klappt auf
+      collapseAll();
       localStorage.setItem('rs.tab', tabMode);
       localStorage.setItem('rs.view', viewMode);
       markTabs(); renderCached(); window.scrollTo(0,0);
