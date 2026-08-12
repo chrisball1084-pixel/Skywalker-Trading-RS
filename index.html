@@ -70,7 +70,11 @@
   .status > span:first-child{min-width:0;flex:1 1 auto}
   .status #statusMeta{margin-left:auto}
   .group-head.tappable{cursor:pointer;display:flex;align-items:center;gap:6px}
-  .group-head .gcount{margin-left:auto;color:var(--faint);font-size:9px}
+  .group-head .gcount{color:var(--faint);font-size:9px}
+  .group-head .gstr{margin-left:auto;color:var(--up);font-size:9px;font-weight:700}
+  .group-head .grank{background:var(--up-soft);color:var(--up);border-radius:9px;
+    padding:1px 6px;font-size:9px;font-weight:700;flex:none}
+  .rnk{display:inline-block;min-width:15px;color:var(--faint);font-size:10px;font-weight:600;margin-right:3px}
   .status.hidden{display:none}
   .status #statusText{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .status #statusMeta{display:flex;align-items:center;gap:7px;flex:none}
@@ -206,7 +210,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.11-4</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-1</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -322,6 +326,15 @@
       Wechseln kostet kein Neuladen — die Werte werden sofort neu berechnet.</span>
     </label>
     <label class="field">
+      <span class="lab">Histogramm-Skala</span>
+      <select class="inp" id="histSel">
+        <option value="range">Spanne — Tief bis Hoch des Fensters</option>
+        <option value="start">Start — Abweichung vom ersten Tag</option>
+      </select>
+      <span class="hint"><b>Spanne</b> entspricht Jeffs Excel-Balken: Die Höhe des letzten Balkens sagt dasselbe wie die RS-%-Zahl.<br>
+      <b>Start</b> war die bisherige Darstellung. Sie kann der Zahl widersprechen — ein Wert kann deutlich über dem Startwert liegen (sieht stark aus) und trotzdem am unteren Ende seiner Monatsspanne stehen, oder umgekehrt.</span>
+    </label>
+    <label class="field">
       <span class="lab">Tages-Kennzahl</span>
       <select class="inp" id="sigSel">
         <option value="0">Roh — RS-Veränderung in Prozent</option>
@@ -338,7 +351,15 @@
         <option value="fv">Finviz</option>
         <option value="sc">StockCharts</option>
       </select>
-      <span class="hint">Die iOS-App von TradingView wechselt das Symbol nur, wenn die Börse mitgeschickt wird — deshalb ist die erste Variante der Standard. Falls ein Ticker trotzdem nicht aufgeht, probier die zweite. <b>Finviz</b> hat keine App und öffnet im Browser, zeigt dafür aber jeden Ticker zuverlässig.</span>
+      <span class="hint">Die Börsenkürzel stammen aus den echten Notierungen aller Ticker, nicht aus Schätzungen — <span style="color:var(--accent)">CBOE:ARKQ</span>, <span style="color:var(--accent)">NASDAQ:SOXX</span>, <span style="color:var(--accent)">AMEX:XLF</span>. <b>Finviz</b> hat keine App und öffnet im Browser, zeigt dafür aber jeden Ticker zuverlässig.</span>
+    </label>
+    <label class="field">
+      <span class="lab">Chart öffnen</span>
+      <select class="inp" id="tabSel">
+        <option value="0">In der TradingView-App</option>
+        <option value="1">In einem neuen Browser-Tab</option>
+      </select>
+      <span class="hint">Ein Link mit neuem Tab landet aus einer installierten Web-App heraus immer im eingebetteten Safari — und der reicht nicht an die installierte App weiter. Genau deshalb kam bisher die mobile Website. Ohne neuen Tab übergibt iOS an die App.</span>
     </label>
     <button class="btn-primary" id="saveSettings">Speichern</button>
     <button class="btn-ghost" id="testConn">Verbindung testen</button>
@@ -605,6 +626,7 @@ ARKK: TSLA, COIN, ROKU, RBLX, PLTR, HOOD, CRSP, TEM, RKLB, PATH
 ARKW: TSLA, COIN, HOOD, ROKU, PLTR, RBLX, SHOP, TWLO, META, TOST
 ARKF: COIN, SHOP, HOOD, TOST, PLTR, DLO, ADYEY, NU, RBLX
 ARKG: TEM, CRSP, TWST, RXRX, VCYT, BEAM, NTLA, ARCT, PACB, CDNA
+ARKQ: TSLA, KTOS, TER, AVAV, DE, PATH, NVDA, IRDM, RKLB, TRMB
 ARKX: KTOS, RKLB, TDY, IRDM, AVAV, TXT, TER, GRMN, HON
 NASA: RKLB, ASTS, LUNR, RDW, PL, AVAV, KTOS, HEI, IRDM, GRMN
 IDGT: NVDA, AVGO, EQIX, DLR, ANET, AMD, CSCO, MSI, KEYS, VRT
@@ -675,6 +697,8 @@ let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
 const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
 let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv'; // Ziel des Chart-Icons
 let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
+let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
+let chartTab = localStorage.getItem('rs.charttab')==='1';     // Chart in neuem Tab statt in der App?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
 // Zugeklappte Gruppen-Ueberschriften
@@ -733,14 +757,40 @@ function holdingsHTML(tk){
   const list = HOLD[tk];
   if(!list || !expanded.has(tk)) return '';
   return `<div class="holds">${list.map(h=>
-    `<a href="${chartURL(h)}" target="_blank" rel="noopener">${esc(h)}</a>`).join('')}</div>`;
+    `<a href="${chartURL(h)}"${tvTarget()}>${esc(h)}</a>`).join('')}</div>`;
 }
 
 /* ---------- Sparkline (histogram) ---------- */
 function histogramSVG(series, opts={}){
-  // series = array of normalized RS values (relative to first). We plot deviation from 1.
   const w = 100, h = 34, n = series.length;
   if(!n) return `<svg class="spark empty" viewBox="0 0 ${w} ${h}"></svg>`;
+
+  // Skala "Spanne": Balken vom Fenster-Tief bis zum Fenster-Hoch, wie Jeffs Excel-Sparkline.
+  // Die Hoehe des letzten Balkens entspricht damit direkt der RS-%-Zahl — beides sagt
+  // dasselbe aus. Die alte Skala (Abweichung vom Fensterstart) konnte ihr widersprechen:
+  // ein Wert kann ueber dem Startwert liegen und trotzdem am unteren Ende der Spanne stehen.
+  if(histScale==='range'){
+    let mn=series[0], mx=series[0];
+    for(const v of series){ if(v<mn) mn=v; if(v>mx) mx=v; }
+    const span = Math.max(1e-9, mx-mn);
+    const bw = w/n, gap = Math.min(1.2, bw*0.18);
+    let hiIdx = 0;
+    for(let i=1;i<n;i++) if(series[i] > series[hiIdx]) hiIdx = i;
+    let bars = '';
+    series.forEach((v,i)=>{
+      const frac = (v-mn)/span;                       // 0 = Fenster-Tief, 1 = Fenster-Hoch
+      const bh = Math.max(0.8, frac*(h-2));
+      const x = i*bw + gap/2, bwi = bw - gap;
+      const isLast = i===n-1;
+      const col = i===hiIdx ? 'var(--gold)' : (frac>=0.5 ? 'var(--up)' : 'var(--down)');
+      const op = (isLast || i===hiIdx) ? 1 : (0.45 + 0.45*(i/(n-1)||0));
+      bars += `<rect x="${x.toFixed(2)}" y="${(h-bh).toFixed(2)}" width="${bwi.toFixed(2)}" height="${bh.toFixed(2)}" rx="0.4" fill="${col}" opacity="${op.toFixed(2)}"/>`;
+    });
+    const mid = `<line x1="0" y1="${h/2}" x2="${w}" y2="${h/2}" stroke="var(--line)" stroke-width="0.5"/>`;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${mid}${bars}</svg>`;
+  }
+
+  // Skala "Start": Abweichung vom ersten Tag des Fensters (bisherige Darstellung)
   const devs = series.map(v => v - 1);                 // center at 0
   const maxAbs = Math.max(0.0001, ...devs.map(d=>Math.abs(d)));
   const bw = w / n, gap = Math.min(1.2, bw*0.18), mid = h/2;
@@ -845,6 +895,17 @@ function visibleBlocks(){
   return all;
 }
 
+// Themenblöcke nach ihrer eigenen Stärke ordnen: Median der Monats-RS aller Mitglieder.
+// Der Median statt des Mittelwerts, damit ein einzelner Ausreißer den Block nicht hochzieht.
+function blockStrength(bl, dataMap){
+  const vals = bl.items
+    .map(r=>{ const d=dataMap&&dataMap[r.ticker]; return d&&d.pct!=null ? d.pct : null; })
+    .filter(v=>v!=null).sort((a,b)=>a-b);
+  if(!vals.length) return -1;
+  const m = Math.floor(vals.length/2);
+  return vals.length%2 ? vals[m] : (vals[m-1]+vals[m])/2;
+}
+
 /* ---------- Übersicht ---------- */
 // Pro Gruppe ein Farbstreifen (Monatsstärke auf einen Blick) und darunter die beiden
 // Extreme: stärkste/schwächste nach RS % (Monat) und nach Thrust (Woche).
@@ -927,25 +988,34 @@ function render(dataMap){
   const colHead = `<div class="colhead"><span></span><span></span>`
     + `<span class="${sortMode==='thrust'?'hi':''}">Woche</span>`
     + `<span class="${sortMode==='pct'?'hi':''}">Monat ${windowN}T</span><span></span></div>`;
-  blocks.forEach(bl=>{
+  // Im Gruppen-Reiter die Themenbloecke selbst nach Staerke ordnen, damit oben steht,
+  // wo das Kapital liegt — statt alphabetisch oder in Eingabereihenfolge.
+  let ordered = blocks;
+  if(tabMode==='groups' && blocks.length>1){
+    ordered = [...blocks].sort((a,b)=> blockStrength(b,dataMap)-blockStrength(a,dataMap));
+  }
+  ordered.forEach((bl,bi)=>{
     const zu = bl.label && collapsed.has(bl.label);
     if(bl.label){
+      const nr = (tabMode==='groups' && ordered.length>1) ? `<span class="grank">${bi+1}</span>` : '';
+      const st = blockStrength(bl, dataMap);
+      const stTxt = st>=0 ? `<span class="gstr">Ø ${Math.round(st*100)}%</span>` : '';
       html += `<div class="group-head tappable" onclick="toggleGroup('${esc(bl.label).replace(/'/g,"\\'")}')">`
-            + `<span class="caret${zu?'':' open'}">▾</span> ${esc(bl.label)}`
-            + `<span class="gcount">${bl.items.length}</span></div>`;
+            + `${nr}<span class="caret${zu?'':' open'}">▾</span> ${esc(bl.label)}`
+            + `${stTxt}<span class="gcount">${bl.items.length}</span></div>`;
       if(!zu) html += colHead;
     }
     if(zu) return;
     let items = bl.items;
     if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
-    items.forEach(r=>{
+    items.forEach((r,i)=>{
       const d = dataMap && dataMap[r.ticker];
-      html += rowHTML(r, d, false, null);
+      html += rowHTML(r, d, false, null, i+1);
     });
   });
   main.innerHTML = html;
 }
-function rowHTML(r, d, isBench, benchData){
+function rowHTML(r, d, isBench, benchData, rank){
   let spark='', sts='', thrCell='', chg='', chgCls='', barCol='transparent', metaLine='';
   const emptySpark = `<svg class="spark empty" viewBox="0 0 100 32"><line x1="0" y1="16" x2="100" y2="16" stroke="var(--line)" stroke-width="0.6"/></svg>`;
   if(isBench){
@@ -980,7 +1050,7 @@ function rowHTML(r, d, isBench, benchData){
   // Echtes <a> statt Button: nur eine direkte Nutzer-Antippen-Navigation loest unter iOS
   // Universal Links aus. Ein per JavaScript geoeffneter Link landet immer im eingebetteten
   // Safari, und der reicht nicht an die installierte App weiter.
-  const tvIcon = isBench ? '<span class="tvbtn-ph"></span>' : `<a class="tvbtn" href="${chartURL(r.ticker)}" target="_blank" rel="noopener" aria-label="Chart ${esc(r.ticker)}">
+  const tvIcon = isBench ? '<span class="tvbtn-ph"></span>' : `<a class="tvbtn" href="${chartURL(r.ticker)}"${tvTarget()} aria-label="Chart ${esc(r.ticker)}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="4 14 9 9 13 13 20 6"/><polyline points="15 6 20 6 20 11"/></svg></a>`;
   const nm = `<span class="nm">${esc(r.name||'')}</span>`;
   // Gruppen mit hinterlegten Bestandteilen lassen sich aufklappen
@@ -989,7 +1059,7 @@ function rowHTML(r, d, isBench, benchData){
   const tkAttr = hasHold ? ` role="button" tabindex="0" onclick="toggleHold('${esc(r.ticker)}',event)"` : '';
   return `<div class="row${isBench?' bench-row':''}">
     <span class="rank-badge" style="background:${barCol}"></span>
-    <span class="tk${hasHold?' tappable':''}"${tkAttr}>${esc(r.ticker)}${caret}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
+    <span class="tk${hasHold?' tappable':''}"${tkAttr}>${rank&&!isBench?`<span class="rnk">${rank}</span>`:''}${esc(r.ticker)}${caret}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
     ${spark}
     ${thrCell}
     ${sts}
@@ -1031,6 +1101,10 @@ const CHART_SRC = {
 function chartURL(ticker){
   return esc((CHART_SRC[chartSrc] || CHART_SRC.tv)(ticker));
 }
+// target="_blank" oeffnet aus einer installierten PWA heraus den eingebetteten Safari,
+// und der reicht Universal Links NICHT an die installierte App weiter — genau deshalb
+// landete man auf der mobilen Website. Ohne target uebernimmt iOS die App.
+function tvTarget(){ return chartTab ? ' target="_blank" rel="noopener"' : ''; }
 // Namen + Kennzahlen als Popover zeigen (Tap auf Ticker)
 let nmPopTimer;
 function showName(el){
@@ -1370,6 +1444,8 @@ function openSheet(which){
     $('#lagSel').value = String(lagDays);
     $('#chartSel').value = chartSrc;
     $('#sigSel').value = sigmaDay?'1':'0';
+    $('#histSel').value = histScale;
+    $('#tabSel').value = chartTab?'1':'0';
     $('#pctWinLbl').textContent = windowN;
   }
   bg.classList.add('open'); sh.classList.add('open');
@@ -1454,6 +1530,8 @@ $('#saveSettings').onclick = ()=>{
   pctMode = $('#pctSel').value; localStorage.setItem('rs.pctmode', pctMode);
   chartSrc = $('#chartSel').value; localStorage.setItem('rs.chartsrc', chartSrc);
   sigmaDay = $('#sigSel').value==='1'; localStorage.setItem('rs.sigma', sigmaDay?'1':'0');
+  histScale = $('#histSel').value; localStorage.setItem('rs.hist', histScale);
+  chartTab = $('#tabSel').value==='1'; localStorage.setItem('rs.charttab', chartTab?'1':'0');
   lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
   activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
