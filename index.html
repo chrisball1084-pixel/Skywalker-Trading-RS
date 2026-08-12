@@ -112,6 +112,11 @@
   .dayrs{margin-left:7px;font-size:10px;font-weight:700;opacity:.8}
   .dayrs.pos{color:var(--up)} .dayrs.neg{color:var(--down)}
   .dayrs.hi{opacity:1;background:var(--up-soft);border-radius:8px;padding:1px 5px}
+  .off52{margin-left:7px;font-size:10px;font-weight:700;opacity:.85}
+  .off52.near{color:var(--up)} .off52.mid{color:var(--dim)} .off52.far{color:var(--down)}
+  .off52.hi{opacity:1;background:var(--up-soft);border-radius:8px;padding:1px 5px}
+  .chip.filt{border-style:dashed}
+  .chip.filt.active{background:#3a2a10;border-color:var(--gold);color:var(--gold);border-style:solid}
   /* hervorgehobene Spalte des gewaehlten Zeitraums */
   .sts.hi,.thr.hi{outline:1.5px solid var(--up);outline-offset:1px}
   .colhead span.hi{color:var(--up)}
@@ -147,7 +152,11 @@
   .dash-card .ln b{font-weight:700;color:var(--ink);flex:none;width:44px}
   .dash-card .ln i{font-style:normal;color:var(--dim);font-size:9.5px;overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
-  .dash-card .ln u{text-decoration:none;font-weight:700;flex:none}
+  .dash-card .ln u{text-decoration:none;font-weight:700;flex:none;margin-left:5px}
+  .dash-card.lead{border-color:#1d5a78;background:#0a2231}
+  .dash-card.warn{border-color:#5b2a2e;background:#25151a}
+  .dash-card h5 span{font-weight:600;opacity:.75}
+  .dash-card .leer{font-size:10.5px;color:var(--faint);padding:3px 0}
   .dash-legend{padding:2px 12px 22px;font-family:var(--mono);font-size:9.5px;color:var(--faint);line-height:1.6}
 
   .empty-state{text-align:center;padding:60px 30px;color:var(--dim)}
@@ -210,7 +219,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-2</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -234,7 +243,9 @@
     <button class="chip" data-sort="pct">Monat</button>
     <button class="chip" data-sort="thrust">Woche</button>
     <button class="chip" data-sort="dayrs">Tag</button>
+    <button class="chip" data-sort="off52">52W</button>
     <button class="chip" data-sort="chg">Kurs Tag</button>
+    <button class="chip filt" id="nearBtn">Nahe Hoch</button>
   </div>
 </header>
 
@@ -684,6 +695,12 @@ if(!localStorage.getItem('rs.mig.hist')){
   localStorage.removeItem('rs.loaded');
   localStorage.setItem('rs.mig.hist','1');
 }
+// Historie auf 260 Handelstage verlaengert und 52-Wochen-Hoch ergaenzt -> einmal neu laden.
+if(!localStorage.getItem('rs.mig.52w')){
+  localStorage.removeItem(LS.cache);
+  localStorage.removeItem('rs.loaded');
+  localStorage.setItem('rs.mig.52w','1');
+}
 
 let benchmark = localStorage.getItem(LS.bench) || 'RSP';
 if(benchmark==='GSPC'){ benchmark='SPY'; localStorage.setItem(LS.bench,'SPY'); } // migrate broken symbol
@@ -694,11 +711,17 @@ let pctMode = localStorage.getItem('rs.pctmode') || 'time';   // 'time' | 'stoch
 // Tag), waehrend die %-1D-Spalte aus dem Live-Datentyp kommt. Sein RS-Block hinkt dadurch
 // einen Handelstag hinterher. Mit diesem Versatz treffen wir sein Sheet exakt (58/58 geprueft).
 let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
-const HISTORY = 100;   // Handelstage, die pro Ticker gespeichert werden (Fenster wird lokal daraus geschnitten)
+// 260 Handelstage = gut ein Jahr. Twelve Data rechnet Credits pro Abruf, nicht pro
+// Datenzeile — die laengere Historie kostet also keinen einzigen zusaetzlichen Aufruf,
+// ermoeglicht aber den Abstand zum 52-Wochen-Hoch.
+const HISTORY = 260;
+const NEAR_HIGH = -10;    // Schwelle "nahe am Hoch" in Prozent
+const FAR_HIGH  = -25;    // darunter gilt eine Bewegung als Momentum ohne Basis
 let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv'; // Ziel des Chart-Icons
 let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
 let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
 let chartTab = localStorage.getItem('rs.charttab')==='1';     // Chart in neuem Tab statt in der App?
+let nearOnly = localStorage.getItem('rs.near')==='1';         // nur Gruppen nahe am 52W-Hoch?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
 // Zugeklappte Gruppen-Ueberschriften
@@ -912,6 +935,30 @@ function blockStrength(bl, dataMap){
 function renderDash(dataMap){
   const has = t => { const d=dataMap&&dataMap[t]; return d&&d.rs&&d.rs.length ? d : null; };
   let html = '';
+
+  // Leader-Panel ueber alle sichtbaren Gruppen hinweg. Die Monats-RS kennt nur 21 Tage;
+  // erst zusammen mit dem Abstand zum 52-Wochen-Hoch laesst sich "haelt sich stark" von
+  // "ist gerade heissgelaufen" trennen.
+  const alle = visibleBlocks().flatMap(b=>b.items).filter(r=>has(r.ticker));
+  const stark = alle.filter(r=>{ const d=has(r.ticker); return d.pct>=0.65 && d.offHigh!=null; });
+  const leader = stark.filter(r=>has(r.ticker).offHigh>=NEAR_HIGH)
+                      .sort((a,b)=> has(b.ticker).offHigh-has(a.ticker).offHigh);
+  const ohneBasis = stark.filter(r=>has(r.ticker).offHigh<FAR_HIGH)
+                      .sort((a,b)=> has(a.ticker).offHigh-has(b.ticker).offHigh);
+  if(leader.length || ohneBasis.length){
+    const zeile = r => { const d=has(r.ticker);
+      return `<a class="ln" href="${chartURL(r.ticker)}"${tvTarget()}><b>${esc(r.ticker)}</b><i>${esc(r.name||'')}</i>`
+           + `<u style="color:var(--dim)">${Math.round(d.pct*100)}%</u>`
+           + `<u style="color:${d.offHigh>=NEAR_HIGH?'var(--up)':'var(--down)'}">${Math.round(d.offHigh)}%</u></a>`; };
+    html += `<div class="dash-grp"><h4>Leader-Check <span style="color:var(--faint)">· Monats-RS ab 65 %</span></h4>
+      <div class="dash-cols">
+        <div class="dash-card lead"><h5>Stark &amp; nahe Hoch <span>≥ ${NEAR_HIGH} %</span></h5>
+          ${leader.length ? leader.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
+        <div class="dash-card warn"><h5>Momentum ohne Basis <span>&lt; ${FAR_HIGH} %</span></h5>
+          ${ohneBasis.length ? ohneBasis.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
+      </div>
+      <div class="dash-legend" style="padding:8px 0 0">Zwei Spalten je Zeile: Monats-RS und Abstand zum 52-Wochen-Hoch.</div></div>`;
+  }
   visibleBlocks().forEach(bl=>{
     const items = bl.items.filter(r=>has(r.ticker));
     if(!items.length) return;
@@ -982,6 +1029,7 @@ function render(dataMap){
       const v = sigmaDay ? d.daySigma : d.dayRS;
       return v==null?-Infinity:v;
     }
+    if(sortMode==='off52') return d.offHigh==null?-Infinity:d.offHigh;
     if(sortMode==='chg') return d.dayChg==null?-Infinity:d.dayChg;
     return 0;
   };
@@ -1007,6 +1055,9 @@ function render(dataMap){
     }
     if(zu) return;
     let items = bl.items;
+    if(nearOnly){
+      items = items.filter(r=>{ const d=dataMap&&dataMap[r.ticker]; return d && d.offHigh!=null && d.offHigh>=NEAR_HIGH; });
+    }
     if(sortMode!=='orig'){ items = [...items].sort((a,c)=> val(c)-val(a)); }
     items.forEach((r,i)=>{
       const d = dataMap && dataMap[r.ticker];
@@ -1037,6 +1088,10 @@ function rowHTML(r, d, isBench, benchData, rank){
       const v = useSig ? d.daySigma : d.dayRS;
       const txt = useSig ? (v>=0?'+':'')+v.toFixed(1)+'σ' : fmtChg(v);
       chg += `<span class="dayrs ${v>=0?'pos':'neg'}${sortMode==='dayrs'?' hi':''}">RS ${txt}</span>`;
+    }
+    if(d.offHigh!=null){
+      const cls = d.offHigh>=NEAR_HIGH ? 'near' : (d.offHigh>=FAR_HIGH ? 'mid' : 'far');
+      chg += `<span class="off52 ${cls}${sortMode==='off52'?' hi':''}">52W ${Math.round(d.offHigh)}%</span>`;
     }
     const t = thrColor(d.thrust);
     thrCell = `<span class="thr${sortMode==='thrust'?' hi':''}" style="background:${t.bg};color:${t.fg}">${d.thrust==null?'—':Math.round(d.thrust*100)+'%'}</span>`;
@@ -1217,9 +1272,14 @@ async function refresh(opts={}){
         if(aligned.length>=3){
           // Rohe RS-Verhaeltnisse speichern. Normierung und Kennzahlen entstehen erst
           // beim Rendern, damit ein anderes Fenster kein Neuladen braucht.
-          const rsFull = aligned.map(v=> v.c / benchMap[v.d]);
+          // Auf sechs signifikante Stellen runden — spart rund die Haelfte des Speichers
+          // im Cache, ohne die Rangfolge zu beeinflussen.
+          const rsFull = aligned.map(v=> +( v.c / benchMap[v.d] ).toPrecision(6));
           const last=s.at(-1).c, prev=s.at(-2)?.c;
-          dataMap[sym] = {rsFull, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+          // 52-Wochen-Hoch aus den Kursen selbst, nicht aus der RS
+          const closes = s.slice(-HISTORY).map(v=>v.c);
+          const hi52 = closes.length ? Math.max(...closes) : null;
+          dataMap[sym] = {rsFull, hi52, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
           loadedToday[sym] = true;
         }
       }
@@ -1364,6 +1424,9 @@ function applyPct(dataMap){
       if(sd>0) d.daySigma = (ch.at(-1)) / sd;
     }
     d.pct = pctMode==='stoch' ? d.stochPct : d.timePct;
+    // Abstand zum 52-Wochen-Hoch, aus dem Kurs — die Monats-RS kennt nur 21 Tage und
+    // weiss nichts vom Jahreskontext. Genau diese Luecke schliesst der Wert.
+    d.offHigh = (d.hi52 && d.lastClose) ? (d.lastClose/d.hi52 - 1)*100 : null;
   });
   if(pctMode==='peer') computePeerRanks(dataMap);
 }
@@ -1487,6 +1550,14 @@ function markTabs(){
   document.querySelectorAll('#viewbar .chip').forEach(x=>x.classList.toggle('active', x.dataset.tab===tabMode));
 }
 
+// Filter "Nahe Hoch"
+$('#nearBtn').onclick = ()=>{
+  nearOnly = !nearOnly;
+  localStorage.setItem('rs.near', nearOnly?'1':'0');
+  $('#nearBtn').classList.toggle('active', nearOnly);
+  renderCached();
+};
+
 // Sortier-Chips
 document.querySelectorAll('.chip[data-sort]').forEach(c=>{
   c.onclick = ()=>{
@@ -1583,6 +1654,7 @@ loadHoldings();
 $('#benchLabel').textContent = benchmark;
 document.querySelectorAll('.chip[data-sort]').forEach(x=>x.classList.toggle('active', x.dataset.sort===sortMode));
 buildTabs();
+$('#nearBtn').classList.toggle('active', nearOnly);
 renderCached();
 if('serviceWorker' in navigator){/* offline shell optional */}
 </script>
