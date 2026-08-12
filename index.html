@@ -219,7 +219,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-2</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-3</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -316,6 +316,14 @@
       <span class="hint">Jeffs aktuelles Sheet nutzt <b>21</b> (die 1-Mth-RS-Werte rastern exakt in 5 %-Schritten = 1/20). Das Tutorial von 2024 nutzte 25. Anzahl Tage im Histogramm und Basis für RS_STS %.</span>
     </label>
     <label class="field">
+      <span class="lab">Datenbasis</span>
+      <select class="inp" id="closedSel">
+        <option value="1">Nur abgeschlossene Handelstage</option>
+        <option value="0">Auch den laufenden Handelstag</option>
+      </select>
+      <span class="hint">Twelve Data liefert während der US-Sitzung schon einen unfertigen Balken für den laufenden Tag. Mit <b>nur abgeschlossene</b> bleibt der draußen — dann liefert ein Lauf um 8 Uhr dasselbe Ergebnis wie einer um 17 Uhr, und ein abgebrochener Lauf kann am Nachmittag gefahrlos fortgesetzt werden. Genau dafür gedacht, wenn du morgens die Schlusskurse des Vorabends willst.</span>
+    </label>
+    <label class="field">
       <span class="lab">Datenstand</span>
       <select class="inp" id="lagSel">
         <option value="1">Wie Jeffs Sheet — ein Handelstag Versatz</option>
@@ -357,11 +365,16 @@
     <label class="field">
       <span class="lab">Chart-Ziel (Symbol rechts in der Zeile)</span>
       <select class="inp" id="chartSel">
-        <option value="tv">TradingView — mit Börsenkürzel (empfohlen)</option>
-        <option value="tvpl">TradingView — nur Ticker, ohne Börse</option>
+        <option value="app1">TradingView-App — Variante A</option>
+        <option value="app2">TradingView-App — Variante B</option>
+        <option value="app3">TradingView-App — Variante C</option>
+        <option value="app4">TradingView-App — Variante D</option>
+        <option value="tv">TradingView-Website — mit Börsenkürzel</option>
+        <option value="tvpl">TradingView-Website — nur Ticker</option>
         <option value="fv">Finviz</option>
         <option value="sc">StockCharts</option>
       </select>
+      <span class="hint" style="color:var(--gold)">Die vier App-Varianten unterscheiden sich nur in der Schreibweise des Aufrufs. Welche die iOS-App versteht, kann ich hier nicht testen — <b>probier sie der Reihe nach durch</b> und sag mir, welche den richtigen Chart öffnet. Dann setze ich sie fest und werfe die anderen raus. Öffnet keine die App, bleib bei Finviz.</span>
       <span class="hint">Die Börsenkürzel stammen aus den echten Notierungen aller Ticker, nicht aus Schätzungen — <span style="color:var(--accent)">CBOE:ARKQ</span>, <span style="color:var(--accent)">NASDAQ:SOXX</span>, <span style="color:var(--accent)">AMEX:XLF</span>. <b>Finviz</b> hat keine App und öffnet im Browser, zeigt dafür aber jeden Ticker zuverlässig.</span>
     </label>
     <label class="field">
@@ -674,7 +687,11 @@ ARGT: MELI, YPF, GGAL, BMA, PAM, SUPV, EDN, CRESY, TGS, LOMA
 ILF: VALE, ITUB, PBR, FMX, AMX, BBD, ABEV, BSAC, SQM, CIB
 GNR: XOM, CVX, LIN, BHP, RIO, SHEL, TTE, NEM, AEM, COP
 GUNR: XOM, CVX, SHEL, TTE, BHP, RIO, LIN, COP, NEM, VALE
-MOO: ZTS, DE, CTVA, NTR, IDXX, MOS, TSN, ADM, CF, BG`;
+MOO: ZTS, DE, CTVA, NTR, IDXX, MOS, TSN, ADM, CF, BG
+XSW: PLTR, NOW, CRM, ORCL, ADBE, INTU, SNOW, MDB, DDOG, HUBS
+XHE: ISRG, ABT, SYK, BSX, EW, PODD, DXCM, RMD, MASI, ICUI
+XRT: CVNA, ORLY, AZO, GPS, ANF, ULTA, DKS, BBY, TGT, BURL
+XBI: VRTX, ALNY, INCY, NBIX, EXEL, IONS, BMRN, SRPT, HALO, ARWR`;
 
 /* ---------- State ---------- */
 let ROWS = [];        // parsed ticker list [{type:'group'|'tk', label, ticker, name}]
@@ -722,6 +739,7 @@ let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volati
 let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
 let chartTab = localStorage.getItem('rs.charttab')==='1';     // Chart in neuem Tab statt in der App?
 let nearOnly = localStorage.getItem('rs.near')==='1';         // nur Gruppen nahe am 52W-Hoch?
+let closedOnly = localStorage.getItem('rs.closed')!=='0';     // laufenden Handelstag ausblenden?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
 // Zugeklappte Gruppen-Ueberschriften
@@ -1147,7 +1165,14 @@ function tvSymbol(t){
   // gehen blank raus, dort loest TradingView selbst auf.
   return ROWS.some(r=>r.type==='tk' && r.ticker===t) ? 'AMEX:'+t : t;
 }
+// Eine installierte Web-App oeffnet JEDE https-Adresse im eingebetteten Safari, egal ob
+// mit oder ohne neuen Tab — deshalb kam bisher immer die Website. Ein eigenes URL-Schema
+// ist dagegen keine Webadresse und wird von iOS direkt an die App uebergeben.
 const CHART_SRC = {
+  app1: t => 'tradingview://chart?symbol=' + encodeURIComponent(tvSymbol(t)),
+  app2: t => 'tradingview://chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
+  app3: t => 'tradingview://symbol/' + encodeURIComponent(tvSymbol(t)),
+  app4: t => 'tradingview://' + encodeURIComponent(tvSymbol(t)),
   tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
   tvpl: t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(t),
   fv:   t => 'https://finviz.com/quote.ashx?t=' + encodeURIComponent(t),
@@ -1193,13 +1218,25 @@ function emptyState(kind){
 
 /* ---------- Data fetch ---------- */
 const API = 'https://api.twelvedata.com/time_series';
+// Handelsdatum in New York. Twelve Data liefert waehrend der US-Sitzung bereits einen
+// unfertigen Balken fuer den laufenden Tag — der soll standardmaessig draussen bleiben,
+// damit ein morgens gestarteter Lauf und ein nachmittags fortgesetzter dieselbe Basis haben.
+function usToday(){
+  return new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+}
+function dropUnfinished(series){
+  if(!closedOnly || !series || !series.length) return series;
+  const heute = usToday();
+  return series.filter(v => String(v.d).slice(0,10) < heute);
+}
+
 async function fetchSeries(symbol, key, outputsize){
   const url = `${API}?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${outputsize}&order=ASC&apikey=${encodeURIComponent(key)}`;
   const r = await fetch(url);
   const j = await r.json();
   if(j.status==='error') throw new Error(j.message||'API-Fehler ('+symbol+')');
   if(!j.values) return null;
-  return j.values.map(v=>({d:v.datetime, c:parseFloat(v.close)})).filter(v=>!isNaN(v.c));
+  return dropUnfinished(j.values.map(v=>({d:v.datetime, c:parseFloat(v.close)})).filter(v=>!isNaN(v.c)));
 }
 
 async function refresh(opts={}){
@@ -1242,13 +1279,18 @@ async function refresh(opts={}){
   const benchLast = benchSeries.at(-1).c, benchPrev = benchSeries.at(-2)?.c;
   dataMap[benchSym] = {lastClose:benchLast, dayChg: benchPrev?((benchLast/benchPrev-1)*100):null};
 
-  // 2) Nur fehlende Ticker laden (die heute noch nicht geladen wurden), außer forceAll
+  // 2) Nachladen, was fehlt ODER veraltet ist. Massstab ist das Kursdatum des Benchmarks,
+  // nicht ein "heute schon geladen"-Merker: Bricht ein Lauf ab, behielten die restlichen
+  // Ticker sonst stillschweigend die Kurse vom Vortag und die Anzeige mischte zwei Tage.
+  const benchDate = benchSeries.at(-1).d;
   const todo = syms.filter(sym=>{
     if(sym===benchSym) return false;
     if(forceAll) return true;
-    // schon heute geladen UND im Cache vorhanden -> überspringen
-    if(loadedToday[sym] && dataMap[sym] && dataMap[sym].rs) return false;
-    return true;
+    const d = dataMap[sym];
+    if(!d || !d.rsFull) return true;
+    // Massstab ist das Bezugsdatum des Laufs, nicht das eigene letzte Kursdatum:
+    // Ein kleiner ETF kann legitim einen Tag hinterherhinken, ohne veraltet zu sein.
+    return d.asOf !== benchDate;
   });
 
   if(todo.length===0){
@@ -1279,7 +1321,8 @@ async function refresh(opts={}){
           // 52-Wochen-Hoch aus den Kursen selbst, nicht aus der RS
           const closes = s.slice(-HISTORY).map(v=>v.c);
           const hi52 = closes.length ? Math.max(...closes) : null;
-          dataMap[sym] = {rsFull, hi52, dayChg: prev?((last/prev-1)*100):null, lastClose:last};
+          dataMap[sym] = {rsFull, hi52, asOf: benchDate, lastDate: aligned.at(-1).d,
+                          dayChg: prev?((last/prev-1)*100):null, lastClose:last};
           loadedToday[sym] = true;
         }
       }
@@ -1326,6 +1369,18 @@ function missingSyms(dataMap){
   const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
   return syms.filter(s=> s!==activeBench && !(dataMap && dataMap[s] && (dataMap[s].rsFull||dataMap[s].rs)));
 }
+// Ticker, deren Kurse aelter sind als der Datenstand des Laufs. Entstehen, wenn ein Lauf
+// abbricht und spaeter fortgesetzt wird — dann stehen zwei Handelstage nebeneinander.
+function staleSyms(dataMap){
+  const meta = loadMeta() || {};
+  if(!meta.dataDate || !dataMap) return [];
+  const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
+  return syms.filter(s=>{
+    if(s===activeBench) return false;
+    const d = dataMap[s];
+    return d && d.rsFull && d.asOf && d.asOf !== meta.dataDate;
+  });
+}
 function fmtDay(iso){
   if(!iso) return '–';
   const p = String(iso).slice(0,10).split('-');
@@ -1349,16 +1404,20 @@ function renderStatus(dataMap){
     ? new Date(meta.lastRun).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
     : 'nie';
 
+  const alt = staleSyms(dataMap);
   let kind = 'live', txt = `Kurse ${stand} · ${lauf}`, extra = `${okCount}/${syms.length}`;
-  if(miss.length){
+  if(alt.length){
+    kind = 'err';
+    txt = `${alt.length} Ticker noch vom Vortag · Kurse ${stand}`;
+  } else if(miss.length){
     kind = meta.stopped==='limit' ? 'err' : 'warn';
-    extra = `${okCount}/${syms.length}`;
     if(meta.stopped==='limit') txt = `Tageslimit${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Kurse ${stand}`;
   }
   $('#statusDot').className = 'dot ' + (kind==='err'?'err':(kind==='warn'?'warn':'live'));
   $('#statusText').textContent = txt;
-  $('#statusMeta').innerHTML = miss.length
-    ? `<span title="${esc(miss.slice(0,25).join(', '))}">${extra}</span> <button class="ministat" onclick="refresh()">Fehlende laden</button>`
+  const offen = alt.length + miss.length;
+  $('#statusMeta').innerHTML = offen
+    ? `<span title="${esc([...alt,...miss].slice(0,25).join(', '))}">${extra}</span> <button class="ministat" onclick="refresh()">${alt.length?'Angleichen':'Fehlende laden'}</button>`
     : extra;
 }
 
@@ -1505,6 +1564,7 @@ function openSheet(which){
     $('#windowN').value = windowN;
     $('#pctSel').value = pctMode;
     $('#lagSel').value = String(lagDays);
+    $('#closedSel').value = closedOnly?'1':'0';
     $('#chartSel').value = chartSrc;
     $('#sigSel').value = sigmaDay?'1':'0';
     $('#histSel').value = histScale;
@@ -1539,6 +1599,7 @@ function buildTabs(){
     c.onclick = ()=>{
       tabMode = c.dataset.tab;
       viewMode = tabMode==='dash' ? 'dash' : 'list';
+      collapsed.clear(); localStorage.removeItem('rs.collapsed');   // Ansichtswechsel klappt auf
       localStorage.setItem('rs.tab', tabMode);
       localStorage.setItem('rs.view', viewMode);
       markTabs(); renderCached(); window.scrollTo(0,0);
@@ -1604,13 +1665,15 @@ $('#saveSettings').onclick = ()=>{
   histScale = $('#histSel').value; localStorage.setItem('rs.hist', histScale);
   chartTab = $('#tabSel').value==='1'; localStorage.setItem('rs.charttab', chartTab?'1':'0');
   lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
+  const prevClosed = closedOnly;
+  closedOnly = $('#closedSel').value==='1'; localStorage.setItem('rs.closed', closedOnly?'1':'0');
   activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
   closeSheets();
 
   // Nur ein Benchmark-Wechsel macht die gespeicherten Reihen ungültig. Fenster und Maß
   // werden aus der vorhandenen Historie neu berechnet — kein Neuladen nötig.
-  const benchChanged = benchmark!==prevBench;
+  const benchChanged = benchmark!==prevBench || closedOnly!==prevClosed;
   if(benchChanged){ localStorage.removeItem(LS.cache); localStorage.removeItem('rs.loaded'); }
 
   if(!k){ render(null); return; }
