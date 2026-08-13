@@ -114,8 +114,12 @@
   .thr{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;padding:5px 2px;border-radius:7px}
   .chg{font-family:var(--mono);font-size:11px;text-align:right;color:var(--dim);display:block}
   .chg.pos{color:var(--up)} .chg.neg{color:var(--down)}
+  /* Beschriftung und Zahl duerfen beim Umbruch nicht getrennt werden — sonst steht das
+     "RS" am Ende der einen Zeile und sein Wert am Anfang der naechsten. */
+  .chg,.dayrs,.off52{white-space:nowrap}
   .dayrs{margin-left:7px;font-size:10px;font-weight:700;opacity:.8}
   .dayrs.pos{color:var(--up)} .dayrs.neg{color:var(--down)}
+  .k1{color:var(--faint);font-size:9px;font-weight:600}
   .dayrs.hi{opacity:1;background:var(--up-soft);border-radius:8px;padding:1px 5px}
   .off52{margin-left:7px;font-size:10px;font-weight:700;opacity:.85}
   .off52.near{color:var(--up)} .off52.mid{color:var(--dim)} .off52.far{color:var(--down)}
@@ -224,7 +228,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.13-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.13-2</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -1110,7 +1114,9 @@ function rowHTML(r, d, isBench, benchData, rank){
     sts = `<span class="sts${sortMode==='pct'?' hi':''}" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
     if(p!=null){ barCol = p>=0.65?'var(--up)':(p<0.3?'var(--down)':'var(--faint)'); }
     // Beide Tageswerte nebeneinander: Kursbewegung und RS-Bewegung. Nur die zweite zeigt Rotation.
-    if(d.dayChg!=null){ chg = fmtChg(d.dayChg); chgCls = d.dayChg>=0?'pos':'neg'; }
+    // "Kurs" ausschreiben: ohne Beschriftung war nicht erkennbar, dass die erste Zahl die
+    // Kursbewegung ist und die zweite die relative dazu.
+    if(d.dayChg!=null){ chg = `<span class="k1">Kurs</span> ${fmtChg(d.dayChg)}`; chgCls = d.dayChg>=0?'pos':'neg'; }
     if(d.dayRS!=null){
       const useSig = sigmaDay && d.daySigma!=null;
       const v = useSig ? d.daySigma : d.dayRS;
@@ -1338,7 +1344,11 @@ async function refresh(opts={}){
           // 52-Wochen-Hoch aus den Kursen selbst, nicht aus der RS
           const closes = s.slice(-HISTORY).map(v=>v.c);
           const hi52 = closes.length ? Math.max(...closes) : null;
+          // Die letzten Schlusskurse mitspeichern, damit die Tages-Kursaenderung denselben
+          // Tag meint wie die Tages-RS. Ohne das rechnet die eine im versetzten Fenster
+          // und die andere auf dem letzten Kurs — zwei verschiedene Tage nebeneinander.
           dataMap[sym] = {rsFull, hi52, asOf: benchDate, lastDate: aligned.at(-1).d,
+                          tail: s.slice(-6).map(v=>v.c),
                           dayChg: prev?((last/prev-1)*100):null, lastClose:last};
           loadedToday[sym] = true;
         }
@@ -1503,7 +1513,16 @@ function applyPct(dataMap){
     d.pct = pctMode==='stoch' ? d.stochPct : d.timePct;
     // Abstand zum 52-Wochen-Hoch, aus dem Kurs — die Monats-RS kennt nur 21 Tage und
     // weiss nichts vom Jahreskontext. Genau diese Luecke schliesst der Wert.
-    d.offHigh = (d.hi52 && d.lastClose) ? (d.lastClose/d.hi52 - 1)*100 : null;
+    // Tages-Kursaenderung auf denselben Tag beziehen wie die Tages-RS. Fehlt der
+    // Kursschwanz (Cache aus einer aelteren Fassung), bleibt der gespeicherte Wert stehen.
+    const t = d.tail;
+    if(t && t.length >= lagDays+2){
+      const i = t.length-1-lagDays;
+      d.dayChg = (t[i]/t[i-1] - 1)*100;
+      d.closeNow = t[i];
+    }
+    const bezug = d.closeNow ?? d.lastClose;
+    d.offHigh = (d.hi52 && bezug) ? (bezug/d.hi52 - 1)*100 : null;
   });
   if(pctMode==='peer') computePeerRanks(dataMap);
 }
