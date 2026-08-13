@@ -224,7 +224,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.12-5</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.13-1</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -370,25 +370,22 @@
     <label class="field">
       <span class="lab">Chart-Ziel (Symbol rechts in der Zeile)</span>
       <select class="inp" id="chartSel">
-        <option value="saf1">App über Safari — Chart (Variante E)</option>
-        <option value="saf2">App über Safari — Symbolseite (Variante F)</option>
-        <option value="app5">App direkt — Variante G</option>
-        <option value="app6">App direkt — Variante H</option>
-        <option value="tv">TradingView-Website — mit Börsenkürzel</option>
-        <option value="tvpl">TradingView-Website — nur Ticker</option>
+        <option value="tv">TradingView — mit Börsenkürzel</option>
+        <option value="tvpl">TradingView — nur Ticker</option>
         <option value="fv">Finviz</option>
         <option value="sc">StockCharts</option>
       </select>
-      <span class="hint" style="color:var(--gold)">Varianten A–D sind raus: Sie öffneten die App, aber ohne Symbol. TradingView hat gar kein eigenes URL-Schema mit Symbolübergabe — die App fängt stattdessen normale <span style="color:var(--accent)">tradingview.com</span>-Links ab. <b>E und F</b> nutzen das: Sie zwingen iOS, den Link in Safari selbst zu öffnen statt im eingebetteten Browser, und dort übergibt Safari an die App. <b>Fang mit E an.</b> G und H sind noch zwei Schema-Schreibweisen als Rückfallebene.</span>
-      <span class="hint">Die Börsenkürzel stammen aus den echten Notierungen aller Ticker, nicht aus Schätzungen — <span style="color:var(--accent)">CBOE:ARKQ</span>, <span style="color:var(--accent)">NASDAQ:SOXX</span>, <span style="color:var(--accent)">AMEX:XLF</span>. <b>Finviz</b> hat keine App und öffnet im Browser, zeigt dafür aber jeden Ticker zuverlässig.</span>
+      <span class="hint">Die Börsenkürzel stammen aus den echten Notierungen aller Ticker: <span style="color:var(--accent)">CBOE:ARKQ</span>, <span style="color:var(--accent)">NASDAQ:SOXX</span>, <span style="color:var(--accent)">AMEX:XLF</span>.</span>
     </label>
     <label class="field">
-      <span class="lab">Chart öffnen</span>
-      <select class="inp" id="tabSel">
-        <option value="0">In der TradingView-App</option>
-        <option value="1">In einem neuen Browser-Tab</option>
+      <span class="lab">Chart öffnen in</span>
+      <select class="inp" id="openSel">
+        <option value="inapp">Browser-Ansicht in der App — empfohlen</option>
+        <option value="safari">Safari-App — legt eigene Tabs an</option>
       </select>
-      <span class="hint">Ein Link mit neuem Tab landet aus einer installierten Web-App heraus immer im eingebetteten Safari — und der reicht nicht an die installierte App weiter. Genau deshalb kam bisher die mobile Website. Ohne neuen Tab übergibt iOS an die App.</span>
+      <span class="hint"><b>Browser-Ansicht in der App</b> nutzt dieselben Anmeldedaten und dasselbe Layout wie deine Safari-App — sie teilen sich die Sitzung. Jeder weitere Chart landet in derselben Ansicht, es sammeln sich also keine Tabs an, und „Fertig" bringt dich direkt zurück.<br>
+      <b>Safari-App</b> öffnet den Link in Safari selbst. Genau dort entsteht das Problem, das du beschrieben hast: Zehn Ticker heißen zehn Tabs.<br>
+      Die TradingView-<i>App</i> lässt sich leider nicht gezielt ansteuern — sie hat kein URL-Schema, das ein Symbol entgegennimmt.</span>
     </label>
     <button class="btn-primary" id="saveSettings">Speichern</button>
     <button class="btn-ghost" id="testConn">Verbindung testen</button>
@@ -742,7 +739,7 @@ const FAR_HIGH  = -25;    // darunter gilt eine Bewegung als Momentum ohne Basis
 let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv'; // Ziel des Chart-Icons
 let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
 let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
-let chartTab = localStorage.getItem('rs.charttab')==='1';     // Chart in neuem Tab statt in der App?
+let chartOpen = localStorage.getItem('rs.chartopen') || 'inapp';   // 'inapp' | 'safari'
 let nearOnly = localStorage.getItem('rs.near')==='1';         // nur Gruppen nahe am 52W-Hoch?
 let closedOnly = localStorage.getItem('rs.closed')!=='0';     // laufenden Handelstag ausblenden?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
@@ -1187,22 +1184,24 @@ function tvSymbol(t){
 // Link in Safari selbst zu oeffnen statt im eingebetteten Browser der Web-App — und dort
 // greift der Universal Link und uebergibt an die App.
 const CHART_SRC = {
-  saf1: t => 'x-safari-https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
-  saf2: t => 'x-safari-https://www.tradingview.com/symbols/' + encodeURIComponent(tvSymbol(t).replace(':','-')) + '/',
-  app5: t => 'tradingview://chart?tvwidgetsymbol=' + encodeURIComponent(tvSymbol(t)),
-  app6: t => 'tradingview://open?symbol=' + encodeURIComponent(tvSymbol(t)),
   tv:   t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tvSymbol(t)),
   tvpl: t => 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(t),
   fv:   t => 'https://finviz.com/quote.ashx?t=' + encodeURIComponent(t),
   sc:   t => 'https://stockcharts.com/h-sc/ui?s=' + encodeURIComponent(t)
 };
 function chartURL(ticker){
-  return esc((CHART_SRC[chartSrc] || CHART_SRC.tv)(ticker));
+  const url = (CHART_SRC[chartSrc] || CHART_SRC.tv)(ticker);
+  // x-safari-https:// zwingt iOS, den Link in der Safari-App zu oeffnen. Das zeigt zwar
+  // das eigene, angemeldete Layout, legt aber bei jedem Antippen einen neuen Tab an.
+  return esc(chartOpen==='safari' ? url.replace(/^https:/, 'x-safari-https:') : url);
 }
 // target="_blank" oeffnet aus einer installierten PWA heraus den eingebetteten Safari,
 // und der reicht Universal Links NICHT an die installierte App weiter — genau deshalb
 // landete man auf der mobilen Website. Ohne target uebernimmt iOS die App.
-function tvTarget(){ return chartTab ? ' target="_blank" rel="noopener"' : ''; }
+// Ein *benannter* Zielrahmen statt _blank: Jeder weitere Chart landet in derselben
+// Ansicht statt in einem neuen Tab. Beim x-safari-Weg greift das nicht, dort entscheidet
+// die Safari-App selbst — deshalb dort der Tab-Wildwuchs.
+function tvTarget(){ return chartOpen==='safari' ? '' : ' target="tvchart" rel="noopener"'; }
 // Namen + Kennzahlen als Popover zeigen (Tap auf Ticker)
 let nmPopTimer;
 function showName(el){
@@ -1324,7 +1323,7 @@ async function refresh(opts={}){
   const totalTodo = todo.length;
   await acquireWakeLock();   // iOS pausiert Timer, sobald der Bildschirm ausgeht
   for(const sym of todo){
-    showStatus('live', `Lade ${sym} …`, `${done}/${totalTodo}${forceAll?'':' (fehlende)'}`);
+    showStatus('live', `Lade ${sym} … ${wakeInfo()}`, `${done}/${totalTodo}`);
     try{
       const s = await fetchSeries(sym, key, need);
       if(s && s.length>=3){
@@ -1532,6 +1531,11 @@ async function acquireWakeLock(){
   try{ wakeLock = await navigator.wakeLock.request('screen'); }catch(e){ wakeLock = null; }
   return wakeLock;
 }
+// Fuer die Statuszeile waehrend des Ladens: greift die Bildschirmsperre-Verhinderung?
+function wakeInfo(){
+  if(!('wakeLock' in navigator)) return '· Bildschirm sperrt (nicht unterstützt)';
+  return wakeLock ? '· Bildschirm bleibt an' : '· Bildschirm sperrt (abgelehnt)';
+}
 function releaseWakeLock(){
   running = false;
   try{ wakeLock?.release(); }catch(e){}
@@ -1587,7 +1591,7 @@ function openSheet(which){
     $('#chartSel').value = chartSrc;
     $('#sigSel').value = sigmaDay?'1':'0';
     $('#histSel').value = histScale;
-    $('#tabSel').value = chartTab?'1':'0';
+    $('#openSel').value = chartOpen;
     $('#pctWinLbl').textContent = windowN;
   }
   bg.classList.add('open'); sh.classList.add('open');
@@ -1682,7 +1686,7 @@ $('#saveSettings').onclick = ()=>{
   chartSrc = $('#chartSel').value; localStorage.setItem('rs.chartsrc', chartSrc);
   sigmaDay = $('#sigSel').value==='1'; localStorage.setItem('rs.sigma', sigmaDay?'1':'0');
   histScale = $('#histSel').value; localStorage.setItem('rs.hist', histScale);
-  chartTab = $('#tabSel').value==='1'; localStorage.setItem('rs.charttab', chartTab?'1':'0');
+  chartOpen = $('#openSel').value; localStorage.setItem('rs.chartopen', chartOpen);
   lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
   const prevClosed = closedOnly;
   closedOnly = $('#closedSel').value==='1'; localStorage.setItem('rs.closed', closedOnly?'1':'0');
