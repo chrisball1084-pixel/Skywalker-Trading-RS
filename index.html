@@ -96,9 +96,21 @@
     background:linear-gradient(180deg,var(--bg),rgba(10,14,20,.6));z-index:5;
   }
   .row{
-    display:grid;grid-template-columns:84px minmax(0,1fr) 46px 46px 28px;align-items:center;gap:6px;
+    display:grid;grid-template-columns:84px minmax(0,1fr) 46px 46px 28px;align-items:center;
+    column-gap:6px;row-gap:5px;
     padding:8px 10px;border-bottom:1px solid var(--line);position:relative;
   }
+  /* Eigene Zeile ueber die volle Breite statt in der schmalen Ticker-Spalte.
+     Drei feste Spalten, damit die Werte untereinander aller Zeilen fluchten. */
+  .metrics{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px;margin-top:1px}
+  .metrics .m{display:flex;align-items:baseline;gap:5px;min-width:0;
+    padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.025)}
+  .metrics .m.hi{background:var(--up-soft);box-shadow:inset 0 0 0 1px #1d5a78}
+  .metrics .m i{font-style:normal;font-size:8.5px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--faint);flex:none}
+  .metrics .m b{font-family:var(--mono);font-size:10.5px;font-weight:700;margin-left:auto;
+    white-space:nowrap}
   .colhead{
     display:grid;grid-template-columns:84px minmax(0,1fr) 46px 46px 28px;gap:6px;padding:0 10px 5px;
     font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
@@ -239,7 +251,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.14-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.14-2</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -1148,20 +1160,24 @@ function rowHTML(r, d, isBench, benchData, rank){
     const c = stsColor(p);
     sts = `<span class="sts${sortMode==='pct'?' hi':''}" style="background:${c.bg};color:${c.fg}">${p==null?'—':Math.round(p*100)+'%'}</span>`;
     if(p!=null){ barCol = p>=0.65?'var(--up)':(p<0.3?'var(--down)':'var(--faint)'); }
-    // Beide Tageswerte nebeneinander: Kursbewegung und RS-Bewegung. Nur die zweite zeigt Rotation.
-    // "Kurs" ausschreiben: ohne Beschriftung war nicht erkennbar, dass die erste Zahl die
-    // Kursbewegung ist und die zweite die relative dazu.
-    if(d.dayChg!=null){ chg = `<span class="k1">Kurs</span> ${fmtChg(d.dayChg)}`; chgCls = d.dayChg>=0?'pos':'neg'; }
+    // Die drei Kennzahlen als eigene Zeile ueber die volle Breite. Vorher standen sie in
+    // der 84 px schmalen Ticker-Spalte und liefen dort unweigerlich ineinander.
+    const zelle = (lab, wert, farbe, aktiv) =>
+      `<span class="m${aktiv?' hi':''}"><i>${lab}</i><b style="color:${farbe}">${wert}</b></span>`;
+    const teile = [];
+    if(d.dayChg!=null)
+      teile.push(zelle('Kurs', fmtChg(d.dayChg), d.dayChg>=0?'var(--up)':'var(--down)', sortMode==='chg'));
     if(d.dayRS!=null){
       const useSig = sigmaDay && d.daySigma!=null;
       const v = useSig ? d.daySigma : d.dayRS;
-      const txt = useSig ? (v>=0?'+':'')+v.toFixed(1)+'σ' : fmtChg(v);
-      chg += `<span class="dayrs ${v>=0?'pos':'neg'}${sortMode==='dayrs'?' hi':''}">RS ${txt}</span>`;
+      teile.push(zelle('RS Tag', useSig ? (v>=0?'+':'')+v.toFixed(1)+'\u03c3' : fmtChg(v),
+                       v>=0?'var(--up)':'var(--down)', sortMode==='dayrs'));
     }
     if(d.offHigh!=null){
-      const cls = d.offHigh>=NEAR_HIGH ? 'near' : (d.offHigh>=FAR_HIGH ? 'mid' : 'far');
-      chg += `<span class="off52 ${cls}${sortMode==='off52'?' hi':''}">52W ${Math.round(d.offHigh)}%</span>`;
+      const farbe = d.offHigh>=NEAR_HIGH ? 'var(--up)' : (d.offHigh>=FAR_HIGH ? 'var(--dim)' : 'var(--down)');
+      teile.push(zelle('52W-Hoch', Math.round(d.offHigh)+'%', farbe, sortMode==='off52'));
     }
+    chg = teile.join('');
     const t = thrColor(d.thrust);
     thrCell = `<span class="thr${sortMode==='thrust'?' hi':''}" style="background:${t.bg};color:${t.fg}">${d.thrust==null?'—':Math.round(d.thrust*100)+'%'}</span>`;
     metaLine = '';
@@ -1183,11 +1199,12 @@ function rowHTML(r, d, isBench, benchData, rank){
   const tkAttr = hasHold ? ` role="button" tabindex="0" onclick="toggleHold('${esc(r.ticker)}',event)"` : '';
   return `<div class="row${isBench?' bench-row':''}">
     <span class="rank-badge" style="background:${barCol}"></span>
-    <span class="tk${hasHold?' tappable':''}"${tkAttr}>${rank&&!isBench?`<span class="rnk">${rank}</span>`:''}${esc(r.ticker)}${caret}${nm}<span class="chg ${chgCls}" style="text-align:left">${chg}</span>${metaLine}</span>
+    <span class="tk${hasHold?' tappable':''}"${tkAttr}>${rank&&!isBench?`<span class="rnk">${rank}</span>`:''}${esc(r.ticker)}${caret}${nm}${metaLine}</span>
     ${spark}
     ${thrCell}
     ${sts}
     <span class="col4">${tvIcon}</span>
+    ${chg ? `<span class="metrics">${chg}</span>` : ''}
   </div>${isBench?'':holdingsHTML(r.ticker)}`;
 }
 function fmtChg(v){ if(v==null||isNaN(v)) return ''; const s=v>=0?'+':''; return s+v.toFixed(1)+'%'; }
