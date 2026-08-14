@@ -71,9 +71,11 @@
   .status .dot.live{background:var(--up);box-shadow:0 0 8px var(--up)}
   .status .dot.err{background:var(--down)}
   .status .dot.warn{background:var(--gold);box-shadow:0 0 8px var(--gold)}
-  .status{flex-wrap:wrap;row-gap:5px}
-  .status > span:first-child{min-width:0;flex:1 1 auto}
-  .status #statusMeta{margin-left:auto}
+  /* Raster statt Fluss: Der Text bekommt den Rest und wird bei Bedarf gekuerzt, die
+     Zaehler-Spalte behaelt ihre Breite. Vorher konnten beide ineinanderlaufen. */
+  .status{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:4px}
+  .status > span:first-child{min-width:0}
+  .status #statusText{min-width:0}
   .group-head.tappable{cursor:pointer;display:flex;align-items:center;gap:6px}
   .group-head .gcount{color:var(--faint);font-size:9px}
   .group-head .gstr{margin-left:auto;color:var(--up);font-size:9px;font-weight:700}
@@ -152,7 +154,16 @@
   .strip{display:flex;gap:2px;height:30px;border-radius:6px;overflow:hidden;margin-bottom:9px}
   .strip a{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;
     font-family:var(--mono);font-size:8.5px;font-weight:700;text-decoration:none;overflow:hidden}
-  .dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  /* minmax(0,1fr) statt 1fr: Ohne das duerfen lange Namen die Spalte aufblaehen, die
+     rechte Karte wird breiter als die linke und die Seite scrollt seitlich. */
+  .dash-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+  .dash-card{min-width:0;overflow:hidden}
+  .scope{display:flex;gap:6px;margin-bottom:9px}
+  .scope .chip{font-size:10.5px;padding:4px 10px}
+  .dash-card .ln.kopf{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);border-bottom:1px solid var(--line);padding-bottom:3px;margin-bottom:2px;pointer-events:none}
+  .dash-card .ln.kopf b{color:var(--faint);font-weight:600}
+  .dash-card .ln.kopf u{color:var(--faint);font-weight:600;width:34px;text-align:right}
   .dash-card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 9px}
   .dash-card h5{margin:0 0 6px;font-size:9px;letter-spacing:.09em;text-transform:uppercase;
     color:var(--faint);font-weight:700}
@@ -161,7 +172,7 @@
   .dash-card .ln b{font-weight:700;color:var(--ink);flex:none;width:44px}
   .dash-card .ln i{font-style:normal;color:var(--dim);font-size:9.5px;overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
-  .dash-card .ln u{text-decoration:none;font-weight:700;flex:none;margin-left:5px}
+  .dash-card .ln u{text-decoration:none;font-weight:700;flex:none;margin-left:5px;width:34px;text-align:right}
   .dash-card.lead{border-color:#1d5a78;background:#0a2231}
   .dash-card.warn{border-color:#5b2a2e;background:#25151a}
   .dash-card h5 span{font-weight:600;opacity:.75}
@@ -228,7 +239,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.13-2</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.14-1</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -323,6 +334,14 @@
       <span class="lab">Zeitfenster (Handelstage)</span>
       <input class="inp" id="windowN" type="number" min="10" max="60" value="21">
       <span class="hint">Jeffs aktuelles Sheet nutzt <b>21</b> (die 1-Mth-RS-Werte rastern exakt in 5 %-Schritten = 1/20). Das Tutorial von 2024 nutzte 25. Anzahl Tage im Histogramm und Basis für RS_STS %.</span>
+    </label>
+    <label class="field">
+      <span class="lab">Nachladen beim Zurückkehren</span>
+      <select class="inp" id="autoSel">
+        <option value="0">Nur wenn ich es auslöse</option>
+        <option value="1">Automatisch, wenn Ticker fehlen</option>
+      </select>
+      <span class="hint">Automatisch bedeutet: Kommst du in die App zurück und es fehlen noch Ticker, lädt sie von selbst weiter. Praktisch nach einem abgebrochenen Lauf — führt aber dazu, dass in der Statuszeile eine spätere Uhrzeit steht als die, zu der du gestartet hast. Standard ist deshalb <b>nur wenn ich es auslöse</b>; die Statuszeile zeigt ohnehin an, wenn etwas fehlt.</span>
     </label>
     <label class="field">
       <span class="lab">Datenbasis</span>
@@ -745,6 +764,9 @@ let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volati
 let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
 let chartOpen = localStorage.getItem('rs.chartopen') || 'inapp';   // 'inapp' | 'safari'
 let nearOnly = localStorage.getItem('rs.near')==='1';         // nur Gruppen nahe am 52W-Hoch?
+let leadScope = localStorage.getItem('rs.leadscope') || 'groups';   // Leader-Check: 'global' | 'groups'
+let autoResume = localStorage.getItem('rs.autoresume')==='1';       // beim Zurueckkehren selbst nachladen?
+function setScope(s){ leadScope=s; localStorage.setItem('rs.leadscope', s); renderCached(); }
 let closedOnly = localStorage.getItem('rs.closed')!=='0';     // laufenden Handelstag ausblenden?
 let viewMode = localStorage.getItem('rs.view') || 'list';     // 'list' | 'dash'
 let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'|'groups'|'stocks'
@@ -752,10 +774,12 @@ let tabMode = localStorage.getItem('rs.tab') || 'global';     // 'dash'|'global'
 let collapsed = new Set((localStorage.getItem('rs.collapsed')||'').split('|').filter(Boolean));
 // Alle Gruppen zuklappen — nach Ansichtswechsel und nach dem Laden, damit die Liste
 // aufgeraeumt startet. Bei nur einem Block bleibt er offen, sonst waere der Schirm leer.
+// Nur die Industriegruppen zuklappen. Im Markt-Reiter bleibt stehen, was du offen
+// gelassen hast — dort sind es vier Bloecke, die Aufraeumen gar nicht noetig machen.
 function collapseAll(){
-  const labels = buildBlocks().map(b=>b.label).filter(Boolean);
-  if(labels.length<2){ collapsed.clear(); }
-  else labels.forEach(l=>collapsed.add(l));
+  const labels = buildBlocks().map(b=>b.label).filter(Boolean).filter(l=>blockTab(l)==='groups');
+  if(labels.length<2) return;
+  labels.forEach(l=>collapsed.add(l));
   localStorage.setItem('rs.collapsed', [...collapsed].join('|'));
 }
 function toggleGroup(label){
@@ -971,7 +995,12 @@ function renderDash(dataMap){
   // Leader-Panel ueber alle sichtbaren Gruppen hinweg. Die Monats-RS kennt nur 21 Tage;
   // erst zusammen mit dem Abstand zum 52-Wochen-Hoch laesst sich "haelt sich stark" von
   // "ist gerade heissgelaufen" trennen.
-  const alle = visibleBlocks().flatMap(b=>b.items).filter(r=>has(r.ticker));
+  // Sektoren und Industriegruppen getrennt betrachten — sie sind nicht vergleichbar:
+  // elf Sektoren decken den ganzen Markt ab, die Gruppen sind Ausschnitte daraus.
+  const leadBlocks = buildBlocks().filter(b => leadScope==='global'
+      ? blockTab(b.label)==='global'
+      : blockTab(b.label)==='groups');
+  const alle = leadBlocks.flatMap(b=>b.items).filter(r=>has(r.ticker));
   const stark = alle.filter(r=>{ const d=has(r.ticker); return d.pct>=0.65 && d.offHigh!=null; });
   const leader = stark.filter(r=>has(r.ticker).offHigh>=NEAR_HIGH)
                       .sort((a,b)=> has(b.ticker).offHigh-has(a.ticker).offHigh);
@@ -982,14 +1011,20 @@ function renderDash(dataMap){
       return `<a class="ln" href="${chartURL(r.ticker)}"${tvTarget()}><b>${esc(r.ticker)}</b><i>${esc(r.name||'')}</i>`
            + `<u style="color:var(--dim)">${Math.round(d.pct*100)}%</u>`
            + `<u style="color:${d.offHigh>=NEAR_HIGH?'var(--up)':'var(--down)'}">${Math.round(d.offHigh)}%</u></a>`; };
+    const kopf = `<div class="ln kopf"><b>Ticker</b><i></i><u>Monat</u><u>52W</u></div>`;
     html += `<div class="dash-grp"><h4>Leader-Check <span style="color:var(--faint)">· Monats-RS ab 65 %</span></h4>
+      <div class="scope">
+        <button class="chip${leadScope==='global'?' active':''}" onclick="setScope('global')">Index &amp; Sektoren</button>
+        <button class="chip${leadScope==='groups'?' active':''}" onclick="setScope('groups')">Industriegruppen</button>
+      </div>
       <div class="dash-cols">
-        <div class="dash-card lead"><h5>Stark &amp; nahe Hoch <span>≥ ${NEAR_HIGH} %</span></h5>
+        <div class="dash-card lead"><h5>Stark &amp; nahe Hoch <span>≥ ${NEAR_HIGH} %</span></h5>${kopf}
           ${leader.length ? leader.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
-        <div class="dash-card warn"><h5>Momentum ohne Basis <span>&lt; ${FAR_HIGH} %</span></h5>
+        <div class="dash-card warn"><h5>Momentum ohne Basis <span>&lt; ${FAR_HIGH} %</span></h5>${kopf}
           ${ohneBasis.length ? ohneBasis.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
       </div>
-      <div class="dash-legend" style="padding:8px 0 0">Zwei Spalten je Zeile: Monats-RS und Abstand zum 52-Wochen-Hoch.</div></div>`;
+      <div class="dash-legend" style="padding:8px 0 0"><b>Monat</b> = RS-Perzentil über ${windowN} Tage · <b>52W</b> = Abstand zum 52-Wochen-Hoch, 0 % heißt genau darauf.<br>
+      <b>Momentum ohne Basis</b>: ebenfalls stark im Monat, aber weit unter dem Jahreshoch — eine Erholung im Abwärtstrend, keine gehaltene Stärke.</div></div>`;
   }
   visibleBlocks().forEach(bl=>{
     const items = bl.items.filter(r=>has(r.ticker));
@@ -1066,7 +1101,7 @@ function render(dataMap){
     return 0;
   };
   const colHead = `<div class="colhead"><span></span><span></span>`
-    + `<span class="${sortMode==='thrust'?'hi':''}">Woche</span>`
+    + `<span class="${sortMode==='thrust'?'hi':''}">RS Thrust</span>`
     + `<span class="${sortMode==='pct'?'hi':''}">Monat ${windowN}T</span><span></span></div>`;
   // Im Gruppen-Reiter die Themenbloecke selbst nach Staerke ordnen, damit oben steht,
   // wo das Kapital liegt — statt alphabetisch oder in Eingabereihenfolge.
@@ -1566,6 +1601,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden) return;
   // Das System gibt den Wake Lock beim Wegschalten frei — beim Zurueckkommen neu holen.
   if(running){ acquireWakeLock(); return; }
+  if(!autoResume) return;        // sonst laedt die App scheinbar von selbst nach
   if(!localStorage.getItem(LS.key)) return;
   const syms = [...new Set(ROWS.filter(r=>r.type==='tk').map(r=>r.ticker))];
   const cache = loadCache() || {};
@@ -1607,6 +1643,7 @@ function openSheet(which){
     $('#pctSel').value = pctMode;
     $('#lagSel').value = String(lagDays);
     $('#closedSel').value = closedOnly?'1':'0';
+    $('#autoSel').value = autoResume?'1':'0';
     $('#chartSel').value = chartSrc;
     $('#sigSel').value = sigmaDay?'1':'0';
     $('#histSel').value = histScale;
@@ -1709,6 +1746,7 @@ $('#saveSettings').onclick = ()=>{
   lagDays = +$('#lagSel').value; localStorage.setItem('rs.lag', lagDays);
   const prevClosed = closedOnly;
   closedOnly = $('#closedSel').value==='1'; localStorage.setItem('rs.closed', closedOnly?'1':'0');
+  autoResume = $('#autoSel').value==='1'; localStorage.setItem('rs.autoresume', autoResume?'1':'0');
   activeBench = benchmark;
   $('#benchLabel').textContent = benchmark;
   closeSheets();
