@@ -251,7 +251,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.14-2</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.14-3</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -1077,7 +1077,7 @@ function renderDash(dataMap){
   html += `<div class="dash-legend">Streifen: nach Monats-RS, stärkster links.<br>
     <b>Tag</b> = RS-Veränderung am letzten Tag — misst Rotation, nicht Tagesperformance.<br>
     <b>Woche</b> = Thrust · <b>Monat</b> = RS-Perzentil über ${windowN} Handelstage.<br>
-    Kursstand ${stand}${lagDays>0?` − ${lagDays} Tag (wie Jeffs Sheet)`:''}. Tippen öffnet den Chart.</div>`;
+    Bezugstag ${stand}. Tippen öffnet den Chart.</div>`;
   $('#main').innerHTML = html || emptyState('tickers');
 }
 
@@ -1427,6 +1427,10 @@ async function refresh(opts={}){
   saveMeta({
     lastRun: Date.now(),
     dataDate: benchSeries.at(-1).d,
+    // Die letzten Handelstage des Benchmarks mitschreiben. Nur damit laesst sich der
+    // Bezugstag als echtes Datum anzeigen statt als "minus N Tage" — und nur so kann
+    // man ihn gegen Jeffs Blatt pruefen, ohne Handelstage im Kopf abzuzaehlen.
+    benchTail: benchSeries.slice(-8).map(v=>String(v.d).slice(0,10)),
     bench: benchSym,
     stopped: limitHit ? 'limit' : (failed.length ? 'fehler' : null),
     failed: failed.slice(0,20),
@@ -1478,20 +1482,27 @@ function renderStatus(dataMap){
   const okCount = syms.length - miss.length;
 
   // Datenstand: das angezeigte Fenster endet lagDays vor dem letzten geladenen Kurstag
-  let stand = fmtDay(meta.dataDate);
-  if(meta.dataDate && lagDays>0) stand += `−${lagDays}T`;
+  // Bezugstag als echtes Datum: der Tag, auf dem das Fenster endet. Fehlt die Liste der
+  // Handelstage (Cache aus einer aelteren Fassung), bleibt die alte "minus N"-Schreibweise.
+  let stand;
+  const bt = meta.benchTail;
+  if(bt && bt.length > lagDays){
+    stand = fmtDay(bt[bt.length-1-lagDays]);
+  } else {
+    stand = fmtDay(meta.dataDate) + (lagDays>0 ? `−${lagDays}T` : '');
+  }
   const lauf = meta.lastRun
     ? new Date(meta.lastRun).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
     : 'nie';
 
   const alt = staleSyms(dataMap);
-  let kind = 'live', txt = `Kurse ${stand} · ${lauf}`, extra = `${okCount}/${syms.length}`;
+  let kind = 'live', txt = `Bezug ${stand} · geladen ${lauf}`, extra = `${okCount}/${syms.length}`;
   if(alt.length){
     kind = 'err';
-    txt = `${alt.length} Ticker noch vom Vortag · Kurse ${stand}`;
+    txt = `${alt.length} Ticker noch vom Vortag · Bezug ${stand}`;
   } else if(miss.length){
     kind = meta.stopped==='limit' ? 'err' : 'warn';
-    if(meta.stopped==='limit') txt = `Tageslimit${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Kurse ${stand}`;
+    if(meta.stopped==='limit') txt = `Tageslimit${meta.stoppedAt?' bei '+meta.stoppedAt:''} · Bezug ${stand}`;
   }
   $('#statusDot').className = 'dot ' + (kind==='err'?'err':(kind==='warn'?'warn':'live'));
   $('#statusText').textContent = txt;
