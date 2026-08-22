@@ -186,7 +186,9 @@
     text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
   .dash-card .ln u{text-decoration:none;font-weight:700;flex:none;margin-left:5px;width:34px;text-align:right}
   .dash-card.lead{border-color:#1d5a78;background:#0a2231}
-  .dash-card.warn{border-color:#5b2a2e;background:#25151a}
+  /* Neutral-Gold statt Rot: Die Karte heisst "Momentum Leaders", eine Warnfarbe
+     wuerde dem Namen widersprechen. Sie bleibt trotzdem klar von der linken zu trennen. */
+  .dash-card.warn{border-color:#5c4410;background:#221a08}
   .dash-card h5 span{font-weight:600;opacity:.75}
   .dash-card .leer{font-size:10.5px;color:var(--faint);padding:3px 0}
   .dash-legend{padding:2px 12px 22px;font-family:var(--mono);font-size:9.5px;color:var(--faint);line-height:1.6}
@@ -251,7 +253,7 @@
       <rect x="66" y="70" width="12" height="80"/><rect x="84" y="50" width="12" height="100"/>
       <rect x="102" y="64" width="12" height="86"/><rect x="120" y="40" width="12" height="110"/>
       <rect x="138" y="58" width="12" height="92"/></g></svg>
-    <span class="title">Skywalker RS<small id="verLbl">v2026.08.16-1</small></span>
+    <span class="title">Skywalker RS<small id="verLbl">v2026.08.21-1</small></span>
     <span class="bench">vs <b id="benchLabel">SPX</b></span>
   </div>
   <div class="toolbar">
@@ -770,7 +772,7 @@ let lagDays = +(localStorage.getItem('rs.lag') ?? 1);
 // ermoeglicht aber den Abstand zum 52-Wochen-Hoch.
 const HISTORY = 260;
 const NEAR_HIGH = -10;    // Schwelle "nahe am Hoch" in Prozent
-const FAR_HIGH  = -25;    // darunter gilt eine Bewegung als Momentum ohne Basis
+const FAR_HIGH  = -25;    // weiter darunter: starkes Momentum, aber ohne Basis am Jahreshoch
 let chartSrc = localStorage.getItem('rs.chartsrc') || 'tv'; // Ziel des Chart-Icons
 let sigmaDay = localStorage.getItem('rs.sigma')==='1';        // Tages-RS volatilitaetsbereinigt?
 let histScale = localStorage.getItem('rs.hist') || 'range';   // 'range' | 'start'
@@ -1032,11 +1034,11 @@ function renderDash(dataMap){
       <div class="dash-cols">
         <div class="dash-card lead"><h5>Stark &amp; nahe Hoch <span>≥ ${NEAR_HIGH} %</span></h5>${kopf}
           ${leader.length ? leader.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
-        <div class="dash-card warn"><h5>Momentum ohne Basis <span>&lt; ${FAR_HIGH} %</span></h5>${kopf}
+        <div class="dash-card warn"><h5>Momentum Leaders <span>&lt; ${FAR_HIGH} %</span></h5>${kopf}
           ${ohneBasis.length ? ohneBasis.slice(0,8).map(zeile).join('') : '<div class="leer">keine</div>'}</div>
       </div>
       <div class="dash-legend" style="padding:8px 0 0"><b>Monat</b> = RS-Perzentil über ${windowN} Tage · <b>52W</b> = Abstand zum 52-Wochen-Hoch, 0 % heißt genau darauf.<br>
-      <b>Momentum ohne Basis</b>: ebenfalls stark im Monat, aber weit unter dem Jahreshoch — eine Erholung im Abwärtstrend, keine gehaltene Stärke.</div></div>`;
+      <b>Momentum Leaders</b>: ebenfalls stark im Monat, aber weit unter dem Jahreshoch — eine Erholung im Abwärtstrend, keine gehaltene Stärke.</div></div>`;
   }
   visibleBlocks().forEach(bl=>{
     const items = bl.items.filter(r=>has(r.ticker));
